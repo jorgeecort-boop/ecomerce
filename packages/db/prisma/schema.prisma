@@ -1,0 +1,467 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  isActive  Boolean  @default(true)
+  stores    Store[]
+  sessions  Session[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("sessions")
+}
+
+// ============================================
+// MULTI-TENANT: STORES
+// ============================================
+
+model Store {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  domain    String?   @unique
+  logoUrl   String?
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products  Product[]
+  orders    Order[]
+  carts     Cart[]
+  settings  Json?     // Store-specific settings (currency, timezone, etc.)
+  isActive  Boolean  @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([ownerId])
+  @@map("stores")
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+
+model Product {
+  id              String      @id @default(cuid())
+  storeId         String
+  store           Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  price           Decimal     @db.Decimal(10, 2)
+  compareAtPrice  Decimal?    @db.Decimal(10, 2) // Original price before discount
+  costPrice       Decimal?    @db.Decimal(10, 2) // Supplier cost
+  sku             String?
+  barcode         String?
+  images          String[]    // Array of image URLs
+  videoUrl        String?
+  category        String?
+  tags            String[]
+  weight          Decimal?    @db.Decimal(8, 2)
+  dimensions      Json?       // { length, width, height }
+  supplierId      String?
+  supplierProductId String?   // ID in supplier's system
+  trackingUrl     String?
+  isPublished     Boolean     @default(false)
+  isFeatured      Boolean     @default(false)
+  inventory       Int         @default(0)
+  trackInventory  Boolean     @default(true)
+  seoTitle        String?
+  seoDescription  String?
+  trendScore      Float?      // For viral product detection
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
+  cartItems       CartItem[]
+  reviews         Review[]
+
+  @@index([storeId])
+  @@index([isPublished])
+  @@index([supplierId])
+  @@map("products")
+}
+
+// ============================================
+// ORDERS
+// ============================================
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  storeId         String
+  store           Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  status          OrderStatus @default(PENDING)
+  items           OrderItem[]
+  subtotal        Decimal     @db.Decimal(10, 2)
+  shippingCost    Decimal     @db.Decimal(10, 2) @default(0)
+  tax             Decimal     @db.Decimal(10, 2) @default(0)
+  total           Decimal     @db.Decimal(10, 2)
+  currency        String      @default("USD")
+  // Customer info
+  customerEmail   String?
+  customerPhone   String?
+  shippingAddress Json
+  billingAddress  Json?
+  // Payment info
+  stripePaymentId String?     @unique
+  paymentStatus   PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  payments        Payment[]
+  // Fulfillment
+  trackingNumber  String?
+  trackingUrl     String?
+  supplierOrderId String?     // Order ID in supplier system
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  // Refund
+  refundAmount    Decimal?    @db.Decimal(10, 2)
+  refundedAt      DateTime?
+  refundReason    String?
+  // Notes
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+  @@index([stripePaymentId])
+  @@index([customerEmail])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2) // Price at time of purchase
+  costPrice Decimal? @db.Decimal(10, 2) // Supplier cost at time of purchase
+  total     Decimal  @db.Decimal(10, 2)
+  sku       String?
+  title     String   // Denormalized for historical accuracy
+  imageUrl  String?
+  variant   Json?    // Selected variants { color: "red", size: "XL" }
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId String    @unique
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("USD")
+  status            PaymentStatus @default(PENDING)
+  method            String        @default("card") // card, oxxo, pse, etc.
+  receiptUrl        String?
+  errorMessage      String?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@map("payments")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+// ============================================
+// SUPPLIERS
+// ============================================
+
+model Supplier {
+  id          String    @id @default(cuid())
+  name        String
+  code        String    @unique // aliexpress, cjdropshipping, zendrop
+  apiKey      String?
+  apiSecret   String?
+  webhookUrl  String?
+  isActive    Boolean   @default(true)
+  products    SupplierProduct[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("suppliers")
+}
+
+model SupplierProduct {
+  id              String   @id @default(cuid())
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  externalId      String   // Product ID in supplier's system
+  title           String
+  description     String?
+  price           Decimal  @db.Decimal(10, 2)
+  costPrice       Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  images          String[]
+  shippingCost    Decimal? @db.Decimal(10, 2)
+  shippingTime    String?  // e.g., "7-15 days"
+  variants        Json?    // Available variants
+  stock           Int?
+  rating          Float?
+  reviewsCount    Int?
+  lastSyncedAt    DateTime?
+  isMapped        Boolean  @default(false)
+  ourProductId    String?  // Linked Product in our system
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([supplierId, externalId])
+  @@index([supplierId])
+  @@map("supplier_products")
+}
+
+// ============================================
+// TRENDING PRODUCTS (for viral detection)
+// ============================================
+
+model TrendingProduct {
+  id          String   @id @default(cuid())
+  source      String   // tiktok, instagram, pinterest
+  sourceUrl   String
+  sourceId    String   // Video/post ID
+  title       String
+  description String?
+  imageUrl    String?
+  videoUrl    String?
+  views       BigInt   @default(0)
+  likes       BigInt   @default(0)
+  shares      BigInt   @default(0)
+  comments    BigInt   @default(0)
+  trendScore  Float
+  hashtags    String[]
+  detectedAt  DateTime @default(now())
+  isImported  Boolean  @default(false)
+  importedAt  DateTime?
+  productId   String?  // Linked Product if imported
+
+  @@index([trendScore])
+  @@index([source])
+  @@index([isImported])
+  @@map("trending_products")
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_PAID
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_REFUNDED
+  PAYMENT_FAILED
+  LOW_STOCK
+  TREND_ALERT
+  SYSTEM
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  storeId   String?
+  action    String
+  entity    String   // orders, products, settings, etc.
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([storeId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// ============================================
+// CART (Shopping Cart)
+// ============================================
+
+model Cart {
+  id        String      @id @default(cuid())
+  sessionId String?     @unique // For guest users
+  userId    String?     // For authenticated users
+  storeId   String
+  store     Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  subtotal  Decimal     @db.Decimal(10, 2) @default(0)
+  total     Decimal     @db.Decimal(10, 2) @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([storeId])
+  @@map("carts")
+}
+
+model CartItem {
+  id          String   @id @default(cuid())
+  cartId      String
+  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int      @default(1)
+  price       Decimal  @db.Decimal(10, 2) // Price at time of adding
+  total       Decimal  @db.Decimal(10, 2)
+  variant     Json?    // Selected variants
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+// ============================================
+// SHOPIFY SYNC
+// ============================================
+
+model ShopifyOrderSync {
+  id              String   @id @default(cuid())
+  shopifyOrderId  String   @unique
+  orderNumber     String
+  customerEmail   String?
+  status          String   @default("PENDING") // PENDING, PROCESSING, FULFILLED, PARTIALLY_FULFILLED, CANCELLED
+  storeId         String?
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  lineItemsJson   Json?
+  supplierOrderIds String[] @default([])
+  fulfillmentId  String?
+  trackingNumbers String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+  @@map("shopify_order_syncs")
+}
+
+model ShopifyProductMapping {
+  id              String   @id @default(cuid())
+  shopifyProductId Int
+  ecomerceProductId String
+  storeId         String
+  lastSyncedAt    DateTime @default(now())
+  syncStatus      String   @default("SYNCED") // SYNCED, PENDING, ERROR
+
+  @@unique([shopifyProductId, storeId])
+  @@index([storeId])
+  @@map("shopify_product_mappings")
+}
+
+model SupplierOrder {
+  id              String   @id @default(cuid())
+  supplierId      String?
+  storeId         String?
+  externalOrderId String   @unique
+  customerName    String?
+  customerEmail   String?
+  shippingAddress Json?
+  status          String   @default("PENDING")
+  items           Json?
+  totalCost       Decimal  @db.Decimal(10, 2) @default(0)
+  trackingNumber  String?
+  trackingUrl     String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([storeId])
+  @@index([status])
+  @@map("supplier_orders")
+}
+
+// ============================================
+// REVIEWS
+// ============================================
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@map("reviews")
+}
