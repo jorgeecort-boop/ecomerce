@@ -1,7 +1,6 @@
-FROM node:20-slim
+FROM node:20-slim AS base
 
 RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY package.json package-lock.json turbo.json tsconfig.base.json ./
@@ -14,10 +13,22 @@ COPY apps/web/package.json ./apps/web/
 
 RUN npm ci
 
-COPY . .
+# ── Stage: development (hot reload) ──────────────────────────
+FROM base AS development
 
+COPY . .
 RUN npm run db:generate
-RUN npm run build
+
+ENV NODE_ENV=development
+EXPOSE 3001 9229
+
+CMD ["npm", "run", "dev", "--workspace=apps/api"]
+
+# ── Stage: production ─────────────────────────────────────────
+FROM base AS production
+
+COPY . .
+RUN npm run db:generate && npm run build
 
 ENV NODE_ENV=production
 EXPOSE 3001

@@ -1,0 +1,136 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────
+# DESARROLLO LOCAL — Hot reload + servicios de infraestructura
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.dev.yml up --build  (primera vez)
+#   docker compose -f docker-compose.dev.yml down -v     (destruir todo)
+#
+# Servicios expuestos:
+#   API  → http://localhost:3001
+#   Web  → http://localhost:3000
+#   DB   → localhost:5432  (postgres / ecomerce_dev)
+#   Redis→ localhost:6379
+#   MQ   → localhost:15672 (rabbitmq management UI)
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ── Infraestructura ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecomerce-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ecomerce
+      POSTGRES_PASSWORD: ecomerce_dev
+      POSTGRES_DB: ecomerce
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecomerce -d ecomerce']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecomerce-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ecomerce-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ecomerce
+      RABBITMQ_DEFAULT_PASS: ecomerce_dev
+    ports:
+      - '5672:5672'
+      - '15672:15672'   # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend NestJS (hot reload) ───────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+      target: development
+    container_name: ecomerce-api-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://ecomerce:ecomerce_dev@postgres:5432/ecomerce
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://ecomerce:ecomerce_dev@rabbitmq:5672
+    ports:
+      - '3001:3001'
+      - '9229:9229'   # Node.js debugger
+    volumes:
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    command: npm run dev --workspace=apps/api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ── Frontend Next.js (hot reload) ────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.web
+      target: development
+    container_name: ecomerce-web-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NODE_OPTIONS: --max-old-space-size=4096
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    command: npm run dev --workspace=apps/web
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  default:
+    name: ecomerce-dev-network
