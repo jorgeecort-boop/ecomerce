@@ -63,28 +63,38 @@ export class OrdersService {
     });
   }
 
-  async findAllByStore(storeId: string, userId: string): Promise<any[]> {
+  async findAllByStore(
+    storeId: string,
+    userId: string,
+    page = 1,
+    limit = 20,
+    status?: string,
+  ): Promise<{ data: any[]; total: number; page: number; totalPages: number }> {
     const store = await this.prisma.store.findUnique({ where: { id: storeId } });
-    if (!store) {
-      throw new NotFoundException('Store not found');
-    }
-    if (store.ownerId !== userId) {
-      throw new ForbiddenException('You do not own this store');
-    }
+    if (!store) throw new NotFoundException('Store not found');
+    if (store.ownerId !== userId) throw new ForbiddenException('You do not own this store');
 
-    return this.prisma.order.findMany({
-      where: { storeId },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: { id: true, title: true, images: true },
+    const where: any = { storeId };
+    if (status) where.status = status;
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: { select: { id: true, title: true, images: true } },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async findById(id: string): Promise<any> {

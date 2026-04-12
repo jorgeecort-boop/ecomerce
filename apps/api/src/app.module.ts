@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { StoresModule } from './modules/stores/stores.module';
@@ -36,6 +38,12 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
         limit: 5,
       },
     ]),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60 * 1000, // 60 seconds default
+      max: 100,       // max 100 items in memory
+    }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     UsersModule,

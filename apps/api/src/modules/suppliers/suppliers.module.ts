@@ -4,6 +4,7 @@ import { SuppliersService } from './suppliers.service';
 import { SupplierApiService } from './supplier-api.service';
 import { CJDropshippingService } from './cj-dropshipping.service';
 import { AliExpressService } from './aliexpress.service';
+import { InventorySyncService } from './inventory-sync.service';
 
 @Module({
   controllers: [SuppliersController],
@@ -11,7 +12,8 @@ import { AliExpressService } from './aliexpress.service';
     SuppliersService,
     CJDropshippingService,
     AliExpressService,
-    SupplierApiService,   // depends on CJ + AE, must be last
+    SupplierApiService,
+    InventorySyncService,
   ],
   exports: [SuppliersService, SupplierApiService, CJDropshippingService, AliExpressService],
 })
