@@ -1,0 +1,287 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../../config/prisma.service';
+import { Prisma } from '@ecomerce/db';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
+import { OrderStatus, PaymentStatus } from '@ecomerce/db';
+
+@Injectable()
+export class OrdersService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(dto: CreateOrderDto): Promise<any> {
+    const store = await this.prisma.store.findUnique({ where: { id: dto.storeId } });
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    // Calculate totals from items
+    const subtotal = dto.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const shippingCost = dto.shippingCost || 0;
+    const tax = dto.tax || 0;
+    const total = subtotal + shippingCost + tax;
+
+    // Generate order number
+    const orderCount = await this.prisma.order.count({
+      where: { storeId: dto.storeId },
+    });
+    const orderNumber = `${store.slug.toUpperCase()}-${String(orderCount + 1).padStart(6, '0')}`;
+
+    return this.prisma.order.create({
+      data: {
+        orderNumber,
+        storeId: dto.storeId,
+        status: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.PENDING,
+        items: {
+          create: dto.items.map((item) => ({
+            product: { connect: { id: item.productId } },
+            quantity: item.quantity,
+            price: new Prisma.Decimal(item.price),
+            total: new Prisma.Decimal(item.price * item.quantity),
+            title: item.title || 'Unknown Product',
+            sku: item.sku,
+            imageUrl: item.imageUrl,
+          })),
+        },
+        subtotal: new Prisma.Decimal(subtotal),
+        shippingCost: new Prisma.Decimal(shippingCost),
+        tax: new Prisma.Decimal(tax),
+        total: new Prisma.Decimal(total),
+        customerEmail: dto.customerEmail,
+        customerPhone: dto.customerPhone,
+        shippingAddress: dto.shippingAddress as any,
+        billingAddress: dto.billingAddress as any,
+        notes: dto.notes,
+      },
+      include: {
+        items: true,
+        store: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
+    });
+  }
+
+  async findAllByStore(storeId: string, userId: string): Promise<any[]> {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+    if (store.ownerId !== userId) {
+      throw new ForbiddenException('You do not own this store');
+    }
+
+    return this.prisma.order.findMany({
+      where: { storeId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: { id: true, title: true, images: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findById(id: string): Promise<any> {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        store: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
+
+  async updateStatus(id: string, userId: string, dto: UpdateOrderDto): Promise<any> {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { store: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.store.ownerId !== userId) {
+      throw new ForbiddenException('You do not own this store');
+    }
+
+    return this.prisma.order.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        trackingNumber: dto.trackingNumber,
+        trackingUrl: dto.trackingUrl,
+        notes: dto.notes,
+      },
+      include: {
+        items: true,
+        store: true,
+      },
+    });
+  }
+
+  async confirmPayment(orderId: string, stripePaymentId: string): Promise<any> {
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        stripePaymentId,
+        paidAt: new Date(),
+        status: OrderStatus.CONFIRMED,
+      },
+      include: {
+        items: true,
+        store: true,
+      },
+    });
+  }
+
+  async updateAfterSupplierShip(
+    orderId: string,
+    supplierOrderId: string,
+    trackingNumber: string,
+    trackingUrl: string
+  ): Promise<any> {
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.SHIPPED,
+        supplierOrderId,
+        trackingNumber,
+        trackingUrl,
+        shippedAt: new Date(),
+      },
+      include: {
+        items: true,
+        store: true,
+      },
+    });
+  }
+
+  async getStats(storeId: string, userId: string): Promise<any> {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+    if (store.ownerId !== userId) {
+      throw new ForbiddenException('You do not own this store');
+    }
+
+    const [totalOrders, pendingOrders, paidOrders, shippedOrders] = await Promise.all([
+      this.prisma.order.count({ where: { storeId } }),
+      this.prisma.order.count({ where: { storeId, status: OrderStatus.PENDING } }),
+      this.prisma.order.count({ where: { storeId, paymentStatus: PaymentStatus.PAID } }),
+      this.prisma.order.count({ where: { storeId, status: OrderStatus.SHIPPED } }),
+    ]);
+
+    const revenue = await this.prisma.order.aggregate({
+      where: { storeId, paymentStatus: PaymentStatus.PAID },
+      _sum: { total: true },
+    });
+
+    return {
+      totalOrders,
+      pendingOrders,
+      paidOrders,
+      shippedOrders,
+      totalRevenue: revenue._sum.total || 0,
+    };
+  }
+
+  async createGuestOrder(dto: any): Promise<any> {
+    const store = await this.prisma.store.findUnique({ where: { slug: dto.storeSlug } });
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    const orderCount = await this.prisma.order.count({
+      where: { storeId: store.id },
+    });
+    const orderNumber = `${store.slug.toUpperCase()}-${String(orderCount + 1).padStart(6, '0')}`;
+
+    const isPaid = dto.paymentStatus === 'PAID';
+
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          orderNumber,
+          storeId: store.id,
+          status: isPaid ? OrderStatus.CONFIRMED : OrderStatus.PENDING,
+          paymentStatus: isPaid ? PaymentStatus.PAID : PaymentStatus.PENDING,
+          items: {
+            create: dto.items.map((item: any) => ({
+              product: { connect: { id: item.productId } },
+              quantity: item.quantity,
+              price: new Prisma.Decimal(item.price),
+              total: new Prisma.Decimal(item.price * item.quantity),
+              title: 'Product',
+            })),
+          },
+          subtotal: new Prisma.Decimal(dto.subtotal || 0),
+          shippingCost: new Prisma.Decimal(dto.shippingCost || 0),
+          tax: new Prisma.Decimal(dto.tax || 0),
+          total: new Prisma.Decimal(dto.total),
+          currency: dto.currency || 'COP',
+          customerEmail: dto.customerEmail,
+          customerPhone: dto.customerPhone,
+          shippingAddress: dto.shippingAddress,
+          ...(isPaid && {
+            stripePaymentId: dto.paymentIntentId,
+            paidAt: new Date(),
+          }),
+          notes: dto.notes,
+        },
+        include: {
+          items: true,
+          store: {
+            select: { id: true, name: true, slug: true },
+          },
+        },
+      });
+
+      if (isPaid && dto.paymentIntentId) {
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            stripePaymentIntentId: dto.paymentIntentId,
+            amount: new Prisma.Decimal(dto.total),
+            currency: dto.currency || 'COP',
+            status: 'PAID',
+            method: 'mercadopago',
+          },
+        });
+      }
+
+      if (isPaid) {
+        for (const item of dto.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              inventory: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
+      }
+
+      return order;
+    });
+  }
+}
