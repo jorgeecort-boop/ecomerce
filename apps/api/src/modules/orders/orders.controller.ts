@@ -39,12 +39,18 @@ export class OrdersController {
   @Get('store/:storeId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all orders for a store' })
+  @ApiOperation({ summary: 'Get paginated orders for a store' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, type: String })
   async findAllByStore(
     @Param('storeId') storeId: string,
-    @Request() req: { user: { id: string } }
+    @Request() req: { user: { id: string } },
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('status') status?: string,
   ) {
-    return this.ordersService.findAllByStore(storeId, req.user.id);
+    return this.ordersService.findAllByStore(storeId, req.user.id, +page, +limit, status);
   }
 
   @Get('store/:storeId/stats')
