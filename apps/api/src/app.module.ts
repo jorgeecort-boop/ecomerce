@@ -19,6 +19,7 @@ import { PrismaModule } from './config/prisma.module';
 import { HealthController } from './common/health.controller';
 import { TelegramModule } from './common/telegram.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
     PaymentsModule,
     TelegramModule,
     TelegramBotModule,
+    CouponsModule,
   ],
   controllers: [HealthController],
 })

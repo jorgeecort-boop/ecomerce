@@ -4,10 +4,14 @@ import { Prisma } from '@ecomerce/db';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderStatus, PaymentStatus } from '@ecomerce/db';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private couponsService: CouponsService,
+  ) {}
 
   async create(dto: CreateOrderDto): Promise<any> {
     const store = await this.prisma.store.findUnique({ where: { id: dto.storeId } });
@@ -227,6 +231,20 @@ export class OrdersService {
 
     const isPaid = dto.paymentStatus === 'PAID';
 
+    // Validate and apply coupon if provided
+    let discountAmount = 0;
+    let couponId: string | undefined;
+    if (dto.couponCode && dto.subtotal) {
+      const couponResult = await this.couponsService.validate(store.id, {
+        code: dto.couponCode,
+        orderTotal: dto.subtotal,
+      });
+      if (couponResult.valid) {
+        discountAmount = couponResult.discountAmount;
+        couponId = couponResult.couponId;
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {
@@ -246,16 +264,18 @@ export class OrdersService {
           subtotal: new Prisma.Decimal(dto.subtotal || 0),
           shippingCost: new Prisma.Decimal(dto.shippingCost || 0),
           tax: new Prisma.Decimal(dto.tax || 0),
-          total: new Prisma.Decimal(dto.total),
+          total: new Prisma.Decimal(Math.max(0, dto.total - discountAmount)),
           currency: dto.currency || 'COP',
           customerEmail: dto.customerEmail,
           customerPhone: dto.customerPhone,
           shippingAddress: dto.shippingAddress,
+          notes: discountAmount > 0
+            ? `Coupon ${dto.couponCode}: -$${discountAmount.toFixed(2)}${dto.notes ? ` | ${dto.notes}` : ''}`
+            : (dto.notes ?? null),
           ...(isPaid && {
             stripePaymentId: dto.paymentIntentId,
             paidAt: new Date(),
           }),
-          notes: dto.notes,
         },
         include: {
           items: true,
@@ -282,12 +302,12 @@ export class OrdersService {
         for (const item of dto.items) {
           await tx.product.update({
             where: { id: item.productId },
-            data: {
-              inventory: {
-                decrement: item.quantity,
-              },
-            },
+            data: { inventory: { decrement: item.quantity } },
           });
+        }
+        // Redeem coupon after successful payment
+        if (couponId) {
+          await this.couponsService.redeem(couponId);
         }
       }
 
