@@ -23,8 +23,14 @@
     "@prisma/client": "^5.10.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.11.0",
+    "bcryptjs": "^2.4.3",
     "prisma": "^5.10.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   }
 }

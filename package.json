@@ -22,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "prettier": "^3.2.4",
+    "ts-node": "^10.9.2",
     "turbo": "^2.0.0",
     "typescript": "^5.3.3"
   },
@@ -30,6 +31,9 @@
     "npm": ">=10.0.0"
   },
   "packageManager": "npm@10.2.4",
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} packages/db/prisma/seed.ts"
+  },
   "dependencies": {
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/schedule": "^6.1.1",
