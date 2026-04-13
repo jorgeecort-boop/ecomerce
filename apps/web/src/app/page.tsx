@@ -42,10 +42,10 @@ export default function HomePage() {
               Get Started Free
             </Link>
             <Link
-              href="/demo"
+              href="/store/tienda-demo"
               className="px-8 py-4 text-lg font-medium border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              View Demo
+              Ver Demostración
             </Link>
           </div>
         </div>
