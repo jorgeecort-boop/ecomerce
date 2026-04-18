@@ -10,31 +10,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy to VPS
+  deploy-render:
+    name: Trigger Render Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-      - name: Deploy to VPS
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PATH: /opt/ecomerce
+      - name: Trigger deploy on Render
         run: |
-          ssh -o StrictHostKeyChecking=no -T $VPS_USER@$VPS_HOST << 'REMOTE_SCRIPT'
-            set -e
-            cd /opt/ecomerce
-            git pull origin main
-            docker compose -f infra/docker/docker-compose.prod.yml up -d --build
-            docker compose -f infra/docker/docker-compose.prod.yml exec -T api npx prisma migrate deploy --schema=./packages/db/prisma/schema.prisma
-            sleep 10
-            curl -f http://localhost:3001/api/health || exit 1
-            curl -f -o /dev/null -s -w "%{http_code}" http://localhost:3000/ | grep -q 200 || exit 1
-            echo "Deploy successful"
-          REMOTE_SCRIPT
+          DEPLOY=$(curl -s -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":"do_not_clear"}')
+          echo "Deploy triggered: $(echo $DEPLOY | grep -o '"id":"[^"]*"' | head -1)"
+
+      - name: Wait and verify health
+        run: |
+          echo "Waiting 90s for deploy to complete..."
+          sleep 90
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://ecomercio-api-zulc.onrender.com/api/health")
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Deploy successful!"
