@@ -1,11 +1,12 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 /**
  * CloudinaryService
  *
  * Upload, transform and manage product images via Cloudinary.
- * 
+ *
  * Free tier: 25 credits/month (~25 GB storage, 25 GB bandwidth)
  * Registration: https://cloudinary.com/users/register/free
  *
@@ -35,7 +36,7 @@ export class CloudinaryService {
    */
   async uploadFromUrl(
     imageUrl: string,
-    options?: { folder?: string; publicId?: string },
+    options?: { folder?: string; publicId?: string }
   ): Promise<{ url: string; publicId: string; width: number; height: number }> {
     return this.upload({ file: imageUrl, ...options });
   }
@@ -45,7 +46,7 @@ export class CloudinaryService {
    */
   async uploadBase64(
     base64Data: string,
-    options?: { folder?: string; publicId?: string },
+    options?: { folder?: string; publicId?: string }
   ): Promise<{ url: string; publicId: string; width: number; height: number }> {
     const file = base64Data.startsWith('data:')
       ? base64Data
@@ -66,9 +67,9 @@ export class CloudinaryService {
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const signature = await this.generateSignature(
+    const signature = this.generateSignature(
       { public_id: publicId, timestamp: String(timestamp) },
-      apiSecret,
+      apiSecret
     );
 
     const body = new URLSearchParams({
@@ -78,10 +79,10 @@ export class CloudinaryService {
       signature,
     });
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
-      { method: 'POST', body },
-    );
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+      method: 'POST',
+      body,
+    });
 
     if (!res.ok) {
       this.logger.warn(`Cloudinary delete failed for ${publicId}`);
@@ -102,7 +103,7 @@ export class CloudinaryService {
       quality?: string;
       format?: string;
       crop?: string;
-    },
+    }
   ): string {
     const cloudName = this.config.get('CLOUDINARY_CLOUD_NAME');
     if (!cloudName) return '';
@@ -126,9 +127,7 @@ export class CloudinaryService {
    * Generate a signed upload URL for direct browser uploads.
    * Returns params the frontend needs to POST directly to Cloudinary.
    */
-  getUploadParams(
-    folder = 'products',
-  ): {
+  getUploadParams(folder = 'products'): {
     url: string;
     params: Record<string, string>;
   } | null {
@@ -184,7 +183,7 @@ export class CloudinaryService {
     if (!cloudName || !apiKey || !apiSecret) {
       throw new HttpException(
         'Cloudinary not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET to .env',
-        HttpStatus.SERVICE_UNAVAILABLE,
+        HttpStatus.SERVICE_UNAVAILABLE
       );
     }
 
@@ -197,7 +196,7 @@ export class CloudinaryService {
     };
     if (opts.publicId) paramsToSign.public_id = opts.publicId;
 
-    const signature = await this.generateSignature(paramsToSign, apiSecret);
+    const signature = this.generateSignature(paramsToSign, apiSecret);
 
     const body = new URLSearchParams({
       file: opts.file,
@@ -208,10 +207,10 @@ export class CloudinaryService {
     });
     if (opts.publicId) body.append('public_id', opts.publicId);
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body },
-    );
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body,
+    });
 
     if (!res.ok) {
       const err = await res.text();
@@ -234,17 +233,14 @@ export class CloudinaryService {
     };
   }
 
-  private async generateSignature(
-    params: Record<string, string>,
-    apiSecret: string,
-  ): Promise<string> {
+  private generateSignature(params: Record<string, string>, apiSecret: string): string {
     const sortedParams = Object.keys(params)
       .sort()
       .map((k) => `${k}=${params[k]}`)
       .join('&');
 
-    const { createHash } = await import('crypto');
-    return createHash('sha1')
+    return crypto
+      .createHash('sha1')
       .update(sortedParams + apiSecret)
       .digest('hex');
   }
