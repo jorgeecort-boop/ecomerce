@@ -14,7 +14,7 @@ services:
       - key: PORT
         value: 3001
       - key: DATABASE_URL
-        sync: false   # Set manually in Render dashboard
+        value: 'postgresql://postgres.tzflwwbokrsxfibmqirm:S8?e_TE&A4uG!/2@aws-1-us-east-2.pooler.supabase.com:5432/postgres'
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

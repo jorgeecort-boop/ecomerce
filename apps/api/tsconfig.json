@@ -5,7 +5,8 @@
     "moduleResolution": "NodeNext",
     "outDir": "./dist",
     "rootDir": "./src",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "isolatedModules": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
