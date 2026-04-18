@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '../../config/prisma.service';
+import { CouponsService } from '../coupons/coupons.service';
 import { OrderStatus, PaymentStatus, Prisma } from '@ecomerce/db';
 
 jest.mock('@ecomerce/db', () => {
@@ -48,9 +49,18 @@ describe('OrdersService', () => {
     $transaction: jest.fn(),
   };
 
+  const mockCouponsService = {
+    validate: jest.fn().mockResolvedValue({ valid: false, discountAmount: 0 }),
+    redeem: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [OrdersService, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [
+        OrdersService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: CouponsService, useValue: mockCouponsService },
+      ],
     }).compile();
 
     service = module.get<OrdersService>(OrdersService);
@@ -168,18 +178,20 @@ describe('OrdersService', () => {
       );
     });
 
-    it('should return orders for store owner', async () => {
+    it('should return paginated orders for store owner', async () => {
       mockPrisma.store.findUnique.mockResolvedValue(mockStore);
       mockPrisma.order.findMany.mockResolvedValue([mockOrder]);
+      mockPrisma.order.count = jest.fn().mockResolvedValue(1);
 
       const result = await service.findAllByStore('store-1', 'owner-1');
 
-      expect(result).toEqual([mockOrder]);
-      expect(prisma.order.findMany).toHaveBeenCalledWith({
-        where: { storeId: 'store-1' },
-        include: expect.any(Object),
-        orderBy: { createdAt: 'desc' },
-      });
+      expect(result).toEqual({ data: [mockOrder], total: 1, page: 1, totalPages: 1 });
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { storeId: 'store-1' },
+          orderBy: { createdAt: 'desc' },
+        })
+      );
     });
   });
 
