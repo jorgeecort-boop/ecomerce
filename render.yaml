@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     rootDir: .
-    buildCommand: NODE_ENV=development npm ci && npx prisma generate --schema=packages/db/prisma/schema.prisma && npm run build --workspace=packages/db && npm run build --workspace=packages/utils && npm run build --workspace=packages/config && npm run build --workspace=apps/api
+    buildCommand: npm ci && npx prisma generate --schema=packages/db/prisma/schema.prisma && npm run build
     startCommand: node apps/api/dist/main.js
     healthCheckPath: /api/health
     envVars:
