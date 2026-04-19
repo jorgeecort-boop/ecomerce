@@ -34,11 +34,14 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.bot = new Telegraf(this.token);
+    this.bot.catch((err: unknown) => {
+      this.logger.error(`Telegram bot error: ${(err as Error).message ?? err}`);
+    });
     this.registerCommands();
 
-    // Inicia en polling (dev). En producción usar setWebhook.
-    this.bot.launch().catch((err) => {
-      this.logger.error(`Bot launch error: ${err.message}`);
+    // Polling mode. Errors are caught above and logged without crashing the process.
+    this.bot.launch().catch((err: unknown) => {
+      this.logger.error(`Bot launch error: ${(err as Error).message ?? err}`);
     });
 
     this.logger.log('Telegram bot started (polling)');

@@ -50,8 +50,15 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
-  logger.log(`Application is running on: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`Application is running on: http://0.0.0.0:${port}`);
 }
 
-bootstrap();
+process.on('unhandledRejection', (reason: unknown) => {
+  console.error('[UnhandledRejection]', reason);
+});
+
+bootstrap().catch((err) => {
+  console.error('[FatalStartupError]', err);
+  process.exit(1);
+});
