@@ -39,7 +39,13 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     });
     this.registerCommands();
 
-    // Polling mode. Errors are caught above and logged without crashing the process.
+    // In production use webhooks; polling only in development.
+    if (process.env.NODE_ENV === 'production') {
+      this.logger.log('Telegram bot commands registered (webhook mode — polling disabled in production)');
+      return;
+    }
+
+    // Polling mode for local dev. Errors are caught above and logged without crashing.
     this.bot.launch().catch((err: unknown) => {
       this.logger.error(`Bot launch error: ${(err as Error).message ?? err}`);
     });
