@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface CartItem {
   id: string;
@@ -93,7 +92,7 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
         const parsed = JSON.parse(itemsParam) as CartItem[];
         setCart(Array.isArray(parsed) ? parsed : []);
       } catch (err) {
-        console.error("Cart data parse error:", err, "Items params:", itemsParam);
+        console.error('Cart data parse error:', err, 'Items params:', itemsParam);
         setError('Invalid cart data. Please go back to the store.');
       }
     }
@@ -114,7 +113,7 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
 
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(2);
+    setStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
