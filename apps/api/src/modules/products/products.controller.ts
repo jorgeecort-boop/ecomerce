@@ -51,6 +51,13 @@ export class ProductsController {
     return this.productsService.findPublishedByStore(storeId, page || 1, limit || 20);
   }
 
+  @Get('home/cards')
+  @ApiOperation({ summary: 'Get published product cards for homepage' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async findHomeCards(@Query('limit') limit?: number) {
+    return this.productsService.findHomeProductCards(limit || 8);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID' })
   async findOne(@Param('id') id: string) {

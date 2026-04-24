@@ -4,6 +4,14 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from '@ecomerce/db';
 
+export interface HomeProductCard {
+  id: string;
+  name: string;
+  imageUrl: string;
+  price: number;
+  slug: string;
+}
+
 @Injectable()
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
@@ -44,6 +52,37 @@ export class ProductsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findHomeProductCards(limit = 8): Promise<HomeProductCard[]> {
+    const products = await this.prisma.product.findMany({
+      where: {
+        isPublished: true,
+        store: { isActive: true },
+      },
+      select: {
+        id: true,
+        title: true,
+        images: true,
+        price: true,
+        store: {
+          select: { slug: true },
+        },
+      },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+    });
+
+    return products.map((product) => {
+      const [firstImage] = product.images ?? [];
+      return {
+        id: product.id,
+        name: product.title,
+        imageUrl: firstImage || '/placeholder-product.svg',
+        price: Number(product.price),
+        slug: `${product.store.slug}/${product.id}`,
+      };
     });
   }
 

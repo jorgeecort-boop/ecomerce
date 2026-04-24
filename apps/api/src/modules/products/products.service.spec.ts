@@ -150,6 +150,67 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('findHomeProductCards', () => {
+    it('should return homepage cards with selected fields mapped', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([
+        {
+          id: 'prod-home-1',
+          title: 'Home Product',
+          images: ['https://cdn.example.com/product-1.jpg'],
+          price: 49.99,
+          store: { slug: 'demo-store' },
+        },
+      ]);
+
+      const result = await service.findHomeProductCards(4);
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith({
+        where: {
+          isPublished: true,
+          store: { isActive: true },
+        },
+        select: {
+          id: true,
+          title: true,
+          images: true,
+          price: true,
+          store: {
+            select: { slug: true },
+          },
+        },
+        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+        take: 4,
+      });
+
+      expect(result).toEqual([
+        {
+          id: 'prod-home-1',
+          name: 'Home Product',
+          imageUrl: 'https://cdn.example.com/product-1.jpg',
+          price: 49.99,
+          slug: 'demo-store/prod-home-1',
+        },
+      ]);
+    });
+
+    it('should fallback image when product has no image', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([
+        {
+          id: 'prod-home-2',
+          title: 'No Image Product',
+          images: [],
+          price: 12.5,
+          store: { slug: 'demo-store' },
+        },
+      ]);
+
+      const result = await service.findHomeProductCards();
+
+      expect(result[0].imageUrl).toBe('/placeholder-product.svg');
+      expect(result[0].slug).toBe('demo-store/prod-home-2');
+    });
+  });
+
   describe('findById', () => {
     it('should throw NotFoundException when product does not exist', async () => {
       mockPrisma.product.findUnique.mockResolvedValue(null);
