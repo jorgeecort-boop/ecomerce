@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
 import { MercadoPagoService } from './mercado-pago.service';
 import { TelegramService } from '../../common/telegram.service';
+import { EmailService } from '../../common/email.service';
 
 @Injectable()
 export class PaymentsService {
@@ -10,7 +11,8 @@ export class PaymentsService {
   constructor(
     private prisma: PrismaService,
     private mercadoPagoService: MercadoPagoService,
-    private telegram: TelegramService
+    private telegram: TelegramService,
+    private email: EmailService
   ) {}
 
   async handlePaymentNotification(data: any) {
@@ -32,7 +34,10 @@ export class PaymentsService {
 
       const orderId = metadata.orderId;
 
-      const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
       if (!order) {
         this.logger.warn(`Order ${orderId} not found for payment ${paymentId}`);
         return { received: true };
@@ -72,6 +77,30 @@ export class PaymentsService {
           Number(order.total),
           payment_method_id || 'mercadopago'
         );
+
+        if (order.customerEmail) {
+          const ship = (order.shippingAddress as Record<string, unknown> | null) ?? null;
+          const customerName = ship?.['name'] ? String(ship['name']) : 'Cliente';
+          await this.email.sendOrderConfirmation({
+            to: order.customerEmail,
+            customerName,
+            orderNumber: order.orderNumber,
+            items: order.items.map((it) => ({
+              title: it.title || 'Producto',
+              quantity: it.quantity,
+              price: Number(it.price),
+            })),
+            total: Number(order.total),
+            currency: order.currency,
+            shippingAddress: ship
+              ? {
+                  address: ship['address'] ? String(ship['address']) : undefined,
+                  city: ship['city'] ? String(ship['city']) : undefined,
+                  country: ship['country'] ? String(ship['country']) : undefined,
+                }
+              : undefined,
+          });
+        }
       } else if (status === 'rejected' || status === 'cancelled') {
         await this.prisma.$transaction([
           this.prisma.payment.update({

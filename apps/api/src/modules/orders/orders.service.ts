@@ -297,7 +297,7 @@ export class OrdersService {
               quantity: item.quantity,
               price: new Prisma.Decimal(item.price),
               total: new Prisma.Decimal(item.price * item.quantity),
-              title: 'Product',
+              title: item.title || 'Producto',
             })),
           },
           subtotal: new Prisma.Decimal(dto.subtotal || 0),
