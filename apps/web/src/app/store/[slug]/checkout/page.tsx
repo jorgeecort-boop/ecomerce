@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
 import { API_URL } from '@ecomerce/utils';
 
@@ -75,13 +75,13 @@ function formatCurrency(amount: number, currency: string) {
 export default function CheckoutPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { format, currency } = useCurrency();
 
   const [step, setStep] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValidatingShipping, setIsValidatingShipping] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<{ orderId: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,10 +111,36 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
     setCart((c) => c.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
   };
 
-  const handleShippingSubmit = (e: React.FormEvent) => {
+  const handleShippingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsValidatingShipping(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/orders/validate-shipping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeSlug: slug,
+          shippingAddress: form,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response
+          .json()
+          .catch(() => ({ message: 'Failed to validate shipping information' }));
+        setError(payload.message || 'Failed to validate shipping information');
+        return;
+      }
+
+      setStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      setError('Failed to validate shipping information. Please try again.');
+    } finally {
+      setIsValidatingShipping(false);
+    }
   };
 
   const handleProceedToPayment = async () => {
@@ -147,7 +173,7 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
           shippingCost: shipping,
           tax,
           total,
-          currency: 'USD',
+          currency: 'COP',
         }),
       });
 
