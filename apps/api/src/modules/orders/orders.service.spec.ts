@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '../../config/prisma.service';
 import { CouponsService } from '../coupons/coupons.service';
@@ -368,6 +368,66 @@ describe('OrdersService', () => {
       const result = await service.getStats('store-1', 'owner-1');
 
       expect(result.totalRevenue).toBe(0);
+    });
+  });
+
+  describe('validateGuestShipping', () => {
+    it('should validate correctly if all required fields are present', async () => {
+      mockPrisma.store.findFirst = jest.fn().mockResolvedValue({ id: 'store-123' });
+
+      const address = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        address: '123 Main St',
+        city: 'Metropolis',
+        postalCode: '12345',
+        country: 'US',
+      };
+
+      const result = await service.validateGuestShipping('test-store', address);
+      
+      expect(result).toEqual({ valid: true });
+      expect(mockPrisma.store.findFirst).toHaveBeenCalledWith({
+        where: { slug: 'test-store', isActive: true },
+        select: { id: true },
+      });
+    });
+
+    it('should throw NotFoundException if store does not exist', async () => {
+      mockPrisma.store.findFirst = jest.fn().mockResolvedValue(null);
+
+      const address = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        address: '123 Main St',
+        city: 'Metropolis',
+        postalCode: '12345',
+        country: 'US',
+      };
+
+      await expect(service.validateGuestShipping('wrong-store', address)).rejects.toThrow(
+        NotFoundException
+      );
+    });
+
+    it('should throw BadRequestException if a required field is missing', async () => {
+      mockPrisma.store.findFirst = jest.fn().mockResolvedValue({ id: 'store-123' });
+
+      const address = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: '', // missing email
+        address: '123 Main St',
+        city: 'Metropolis',
+        postalCode: '12345',
+        country: 'US',
+      };
+
+      await expect(service.validateGuestShipping('test-store', address)).rejects.toThrow(
+        BadRequestException
+      );
     });
   });
 

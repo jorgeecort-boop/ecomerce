@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
 import { Prisma } from '@ecomerce/db';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -216,6 +216,45 @@ export class OrdersService {
       shippedOrders,
       totalRevenue: revenue._sum.total || 0,
     };
+  }
+
+  async validateGuestShipping(
+    storeSlug: string,
+    shippingAddress: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      address?: string;
+      city?: string;
+      postalCode?: string;
+      country?: string;
+    }
+  ): Promise<{ valid: true }> {
+    const store = await this.prisma.store.findFirst({
+      where: { slug: storeSlug, isActive: true },
+      select: { id: true },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    const requiredFields = [
+      shippingAddress.firstName,
+      shippingAddress.lastName,
+      shippingAddress.email,
+      shippingAddress.address,
+      shippingAddress.city,
+      shippingAddress.postalCode,
+      shippingAddress.country,
+    ];
+
+    const hasMissingRequiredField = requiredFields.some((field) => !field?.trim());
+    if (hasMissingRequiredField) {
+      throw new BadRequestException('Shipping information is incomplete');
+    }
+
+    return { valid: true };
   }
 
   async createGuestOrder(dto: any): Promise<any> {

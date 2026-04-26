@@ -36,6 +36,26 @@ export class OrdersController {
     return this.ordersService.createGuestOrder(dto);
   }
 
+  @Post('validate-shipping')
+  @ApiOperation({ summary: 'Validate guest shipping information before payment step' })
+  async validateShipping(
+    @Body()
+    dto: {
+      storeSlug: string;
+      shippingAddress: {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        address?: string;
+        city?: string;
+        postalCode?: string;
+        country?: string;
+      };
+    }
+  ) {
+    return this.ordersService.validateGuestShipping(dto.storeSlug, dto.shippingAddress);
+  }
+
   @Get('store/:storeId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
