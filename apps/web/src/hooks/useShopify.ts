@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -69,14 +68,16 @@ export function useShopify(pollInterval: number = 0) {
 
   const fetchOrders = useCallback(async (status = 'any', limit = 50) => {
     const token = getToken();
-    if (!token) { setError('Not authenticated'); return; }
+    if (!token) {
+      setError('Not authenticated');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchApi<any[]>(
-        `/shopify/orders?status=${status}&limit=${limit}`,
-        { token },
-      );
+      const data = await fetchApi<any[]>(`/shopify/orders?status=${status}&limit=${limit}`, {
+        token,
+      });
       setOrders(data);
       setLastRefresh(new Date());
     } catch (err: any) {
@@ -88,7 +89,10 @@ export function useShopify(pollInterval: number = 0) {
 
   const fetchProducts = useCallback(async (limit = 50) => {
     const token = getToken();
-    if (!token) { setError('Not authenticated'); return; }
+    if (!token) {
+      setError('Not authenticated');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -103,13 +107,14 @@ export function useShopify(pollInterval: number = 0) {
 
   const fetchSyncOrders = useCallback(async (storeId?: string) => {
     const token = getToken();
-    if (!token) { setError('Not authenticated'); return; }
+    if (!token) {
+      setError('Not authenticated');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const url = storeId
-        ? `/shopify/sync/orders?storeId=${storeId}`
-        : '/shopify/sync/orders';
+      const url = storeId ? `/shopify/sync/orders?storeId=${storeId}` : '/shopify/sync/orders';
       const data = await fetchApi<SyncOrder[]>(url, { token });
       setSyncOrders(data);
       setLastRefresh(new Date());
@@ -122,13 +127,14 @@ export function useShopify(pollInterval: number = 0) {
 
   const fetchStats = useCallback(async (storeId?: string) => {
     const token = getToken();
-    if (!token) { setError('Not authenticated'); return; }
+    if (!token) {
+      setError('Not authenticated');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const url = storeId
-        ? `/shopify/sync/stats?storeId=${storeId}`
-        : '/shopify/sync/stats';
+      const url = storeId ? `/shopify/sync/stats?storeId=${storeId}` : '/shopify/sync/stats';
       const data = await fetchApi<ShopifyStats>(url, { token });
       setStats(data);
     } catch (err: any) {
@@ -148,7 +154,7 @@ export function useShopify(pollInterval: number = 0) {
         token,
       });
     },
-    [],
+    []
   );
 
   // ── Polling ───────────────────────────────────────────────────────────────

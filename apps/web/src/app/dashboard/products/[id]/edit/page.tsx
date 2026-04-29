@@ -4,8 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface Product {
   id: string;
@@ -94,7 +93,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 py-4">
           <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Ecomerce</h1>
-          <Link href="/dashboard/products" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <Link
+            href="/dashboard/products"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
             ← Back to Products
           </Link>
         </div>
@@ -114,9 +116,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-4 transition-colors">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-4 transition-colors"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Title *
+            </label>
             <input
               type="text"
               required
@@ -126,7 +133,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description
+            </label>
             <textarea
               rows={3}
               value={form.description ?? ''}
@@ -136,7 +145,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sale Price ($) *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Sale Price ($) *
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -148,7 +159,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cost Price ($)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Cost Price ($)
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -161,7 +174,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Inventory</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Inventory
+              </label>
               <input
                 type="number"
                 min="0"
@@ -171,7 +186,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Image URL
+              </label>
               <input
                 type="url"
                 value={form.imageUrl ?? ''}
@@ -184,8 +201,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
           {form.price && form.costPrice && Number(form.price) > 0 && (
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300">
-              💡 Margin: {(((Number(form.price) - Number(form.costPrice)) / Number(form.price)) * 100).toFixed(1)}%
-              — Profit per sale: ${(Number(form.price) - Number(form.costPrice)).toFixed(2)}
+              💡 Margin:{' '}
+              {(((Number(form.price) - Number(form.costPrice)) / Number(form.price)) * 100).toFixed(
+                1
+              )}
+              % — Profit per sale: ${(Number(form.price) - Number(form.costPrice)).toFixed(2)}
             </div>
           )}
 

@@ -1,0 +1,10 @@
+{
+  "name": "antigravity-mcp-tools",
+  "version": "1.0.0",
+  "description": "Herramientas MCP instaladas para mejorar el flujo de trabajo de Antigravity",
+  "dependencies": {
+    "@modelcontextprotocol/server-postgres": "latest",
+    "@modelcontextprotocol/server-sqlite": "latest",
+    "@modelcontextprotocol/server-github": "latest"
+  }
+}

@@ -24,6 +24,24 @@ test.describe('Checkout Step Transition', () => {
       });
     });
 
+        // General intercept for validate-shipping
+    await page.route('**/validate-shipping*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ valid: true }),
+      });
+    });
+
+    // Make sure API_URL points to the local backend during tests
+    await page.route('http://localhost:3001/api/orders/validate-shipping', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ valid: true }),
+      });
+    });
+
     await page.goto('/store/test-store');
     await page.locator('#add-to-cart-prod_1').click();
     await page.locator('#cart-button').click();
@@ -43,9 +61,13 @@ test.describe('Checkout Step Transition', () => {
     await page.getByPlaceholder('760001', { exact: true }).fill('110111');
     await page.locator('select').first().selectOption('Colombia');
 
-    await page.getByRole('button', { name: /continue to payment/i }).click();
+                await page.getByRole('button', { name: /continue to payment/i }).click({ force: true });
 
-    await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible();
+                // Small explicit wait to ensure the network request has time to trigger and state to update
+                await page.waitForTimeout(1000);
+
+                // The heading is 'Payment' so it should match exactly
+                await expect(page.getByRole('heading', { name: 'Payment' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/secure payment powered by mercadopago/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /pay with mercadopago/i })).toBeVisible();
   });

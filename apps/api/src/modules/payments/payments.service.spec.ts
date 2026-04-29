@@ -3,6 +3,7 @@ import { PaymentsService } from './payments.service';
 import { PrismaService } from '../../config/prisma.service';
 import { MercadoPagoService } from './mercado-pago.service';
 import { TelegramService } from '../../common/telegram.service';
+import { EmailService } from '../../common/email.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -35,6 +36,11 @@ describe('PaymentsService', () => {
     notifyDeploySuccess: jest.fn().mockResolvedValue(true),
   };
 
+  const mockEmail = {
+    send: jest.fn().mockResolvedValue(true),
+    sendOrderConfirmation: jest.fn().mockResolvedValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -42,6 +48,7 @@ describe('PaymentsService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: MercadoPagoService, useValue: mockMercadoPago },
         { provide: TelegramService, useValue: mockTelegram },
+        { provide: EmailService, useValue: mockEmail },
       ],
     }).compile();
 
@@ -59,6 +66,19 @@ describe('PaymentsService', () => {
     currency: 'COP',
     paymentStatus: 'PENDING',
     status: 'PENDING',
+    customerEmail: null,
+    shippingAddress: null,
+    items: [],
+  };
+
+  const mockOrderWithEmail = {
+    ...mockOrder,
+    customerEmail: 'cliente@example.com',
+    shippingAddress: { name: 'Juan Pérez', address: 'Calle 1', city: 'Bogotá', country: 'Colombia' },
+    items: [
+      { title: 'Producto A', quantity: 2, price: 100 },
+      { title: 'Producto B', quantity: 1, price: 50 },
+    ],
   };
 
   const mockPaymentRecord = {
@@ -315,6 +335,50 @@ describe('PaymentsService', () => {
           }),
         })
       );
+    });
+
+    it('should send order confirmation email when payment is approved and customerEmail exists', async () => {
+      mockMercadoPago.getPayment.mockResolvedValue({
+        status: 'approved',
+        metadata: { orderId: 'order-1' },
+        payment_method_id: 'pse',
+      });
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrderWithEmail);
+      mockPrisma.payment.findFirst.mockResolvedValue(mockPaymentRecord);
+      mockPrisma.$transaction.mockResolvedValue([{}, {}]);
+
+      await service.handlePaymentNotification({
+        type: 'payment',
+        data: { id: 12345 },
+      });
+
+      expect(mockEmail.sendOrderConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'cliente@example.com',
+          orderNumber: 'TEST-000001',
+          customerName: 'Juan Pérez',
+          total: 250,
+          currency: 'COP',
+        })
+      );
+    });
+
+    it('should NOT send email when payment is approved but customerEmail is null', async () => {
+      mockMercadoPago.getPayment.mockResolvedValue({
+        status: 'approved',
+        metadata: { orderId: 'order-1' },
+        payment_method_id: 'pse',
+      });
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrder); // customerEmail: null
+      mockPrisma.payment.findFirst.mockResolvedValue(mockPaymentRecord);
+      mockPrisma.$transaction.mockResolvedValue([{}, {}]);
+
+      await service.handlePaymentNotification({
+        type: 'payment',
+        data: { id: 12345 },
+      });
+
+      expect(mockEmail.sendOrderConfirmation).not.toHaveBeenCalled();
     });
   });
 });

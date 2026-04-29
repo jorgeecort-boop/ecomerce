@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface Store {
   id: string;
@@ -57,7 +56,10 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.storeId) { setError('Please select a store'); return; }
+    if (!form.storeId) {
+      setError('Please select a store');
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
 
@@ -103,7 +105,10 @@ export default function NewProductPage() {
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 py-4">
           <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Ecomerce</h1>
-          <Link href="/dashboard/products" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <Link
+            href="/dashboard/products"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
             ← Back to Products
           </Link>
         </div>
@@ -126,8 +131,10 @@ export default function NewProductPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-5 transition-colors">
-
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 space-y-5 transition-colors"
+        >
           {/* Store selector */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -138,7 +145,9 @@ export default function NewProductPage() {
             ) : stores.length === 0 ? (
               <p className="text-sm text-red-500">
                 No stores found.{' '}
-                <Link href="/dashboard/settings" className="underline">Create one first</Link>
+                <Link href="/dashboard/settings" className="underline">
+                  Create one first
+                </Link>
               </p>
             ) : (
               <select
@@ -148,7 +157,9 @@ export default function NewProductPage() {
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               >
                 {stores.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -218,9 +229,11 @@ export default function NewProductPage() {
 
           {/* Live margin calculator */}
           {margin !== null && (
-            <div className={`p-3 rounded-lg text-sm ${Number(margin) > 30 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'}`}>
-              💡 Margin: <strong>{margin}%</strong>
-              {' '}— Profit per sale: <strong>${(Number(form.price) - Number(form.costPrice)).toFixed(2)}</strong>
+            <div
+              className={`p-3 rounded-lg text-sm ${Number(margin) > 30 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'}`}
+            >
+              💡 Margin: <strong>{margin}%</strong> — Profit per sale:{' '}
+              <strong>${(Number(form.price) - Number(form.costPrice)).toFixed(2)}</strong>
               {Number(margin) < 20 && ' ⚠️ Low margin'}
             </div>
           )}

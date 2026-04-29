@@ -187,48 +187,57 @@ export class CartService {
 
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
 
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber,
-        storeId: cart.storeId,
-        subtotal: cart.subtotal,
-        shippingCost: 0,
-        tax: 0,
-        total: cart.total,
-        shippingAddress: dto.shippingAddress || {},
-        billingAddress: dto.billingAddress,
-        customerEmail: dto.customerEmail,
-        customerPhone: dto.customerPhone,
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
-        items: {
-          create: cart.items.map((item) => ({
-            product: { connect: { id: item.productId } },
-            quantity: item.quantity,
-            price: item.price,
-            costPrice: item.product.costPrice || item.price,
-            total: item.total,
-            variant: item.variant as any,
-            sku: item.product.sku,
-            title: item.product.title,
-            imageUrl: item.product.images[0],
-          })),
-        },
-      },
-    });
-
-    for (const item of cart.items) {
-      if (item.product.trackInventory) {
-        await this.prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            inventory: item.product.inventory - item.quantity,
+    // ATOMIC TRANSACTION: Order creation + inventory update + cart cleanup
+    const order = await this.prisma.$transaction(async (tx) => {
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          storeId: cart.storeId,
+          subtotal: cart.subtotal,
+          shippingCost: 0,
+          tax: 0,
+          total: cart.total,
+          shippingAddress: dto.shippingAddress || {},
+          billingAddress: dto.billingAddress,
+          customerEmail: dto.customerEmail,
+          customerPhone: dto.customerPhone,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+          items: {
+            create: cart.items.map((item) => ({
+              product: { connect: { id: item.productId } },
+              quantity: item.quantity,
+              price: item.price,
+              costPrice: item.product.costPrice || item.price,
+              total: item.total,
+              variant: item.variant as any,
+              sku: item.product.sku,
+              title: item.product.title,
+              imageUrl: item.product.images[0],
+            })),
           },
-        });
-      }
-    }
+        },
+      });
 
-    await this.clearCart(cartId);
+      // Update inventory atomically within the same transaction
+      for (const item of cart.items) {
+        if (item.product.trackInventory) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              inventory: item.product.inventory - item.quantity,
+            },
+          });
+        }
+      }
+
+      // Clear cart atomically
+      await tx.cartItem.deleteMany({
+        where: { cartId },
+      });
+
+      return newOrder;
+    });
 
     await this.telegram.notifyNewOrder(
       order.orderNumber,

@@ -1,6 +1,15 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  ReactNode,
+} from 'react';
+import { API_URL } from '@ecomerce/utils';
 
 interface User {
   id: string;
@@ -18,8 +27,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // ── Cookie helpers ──────────────────────────────────────────────────────────
 function setTokenCookie(token: string) {
@@ -47,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       scheduleRefresh();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    []
   );
 
   // ── Auto-refresh: schedule a refresh 1 minute before token expiry ───────
@@ -55,34 +62,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
     // Access token is 15m = 900s. Refresh at 13m = 780s.
-    refreshTimerRef.current = setTimeout(async () => {
-      const rt = localStorage.getItem('refreshToken');
-      if (!rt) return;
+    refreshTimerRef.current = setTimeout(
+      async () => {
+        const rt = localStorage.getItem('refreshToken');
+        if (!rt) return;
 
-      try {
-        const res = await fetch(`${API_URL}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: rt }),
-        });
+        try {
+          const res = await fetch(`${API_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: rt }),
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          // Save without re-triggering scheduleRefresh inside saveAuth
-          setToken(data.accessToken);
-          localStorage.setItem('token', data.accessToken);
-          localStorage.setItem('refreshToken', data.refreshToken);
-          setTokenCookie(data.accessToken);
-          scheduleRefresh(); // schedule next refresh
-        } else {
-          // Refresh failed — user must re-login
-          doLogout();
+          if (res.ok) {
+            const data = await res.json();
+            // Save without re-triggering scheduleRefresh inside saveAuth
+            setToken(data.accessToken);
+            localStorage.setItem('token', data.accessToken);
+            localStorage.setItem('refreshToken', data.refreshToken);
+            setTokenCookie(data.accessToken);
+            scheduleRefresh(); // schedule next refresh
+          } else {
+            // Refresh failed — user must re-login
+            doLogout();
+          }
+        } catch {
+          // Network error — don't log out, just try again later
+          refreshTimerRef.current = setTimeout(scheduleRefresh, 60_000);
         }
-      } catch {
-        // Network error — don't log out, just try again later
-        refreshTimerRef.current = setTimeout(scheduleRefresh, 60_000);
-      }
-    }, 13 * 60 * 1000); // 13 minutes
+      },
+      13 * 60 * 1000
+    ); // 13 minutes
   }, []);
 
   const doLogout = useCallback(() => {
@@ -148,9 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, token, isLoading, login, register, logout: doLogout }}
-    >
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout: doLogout }}>
       {children}
     </AuthContext.Provider>
   );

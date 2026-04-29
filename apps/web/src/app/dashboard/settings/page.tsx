@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface Store {
   id: string;
@@ -25,9 +24,10 @@ interface StoreForm {
   slug: string;
   logoUrl: string;
   domain: string;
+  shopifyUrl: string;
 }
 
-const DEFAULT_FORM: StoreForm = { name: '', slug: '', logoUrl: '', domain: '' };
+const DEFAULT_FORM: StoreForm = { name: '', slug: '', logoUrl: '', domain: '', shopifyUrl: '' };
 
 function slugify(text: string) {
   return text
@@ -69,7 +69,9 @@ export default function SettingsPage() {
     }
   }, [token]);
 
-  useEffect(() => { loadStores(); }, [loadStores]);
+  useEffect(() => {
+    loadStores();
+  }, [loadStores]);
 
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
@@ -94,6 +96,7 @@ export default function SettingsPage() {
       slug: store.slug,
       logoUrl: store.logoUrl ?? '',
       domain: store.domain ?? '',
+      shopifyUrl: (store as any).settings?.shopifyUrl ?? '',
     });
     setEditingStore(store);
     setShowCreateForm(true);
@@ -112,6 +115,7 @@ export default function SettingsPage() {
         slug: form.slug || slugify(form.name),
         logoUrl: form.logoUrl || undefined,
         domain: form.domain || undefined,
+        settings: form.shopifyUrl ? { shopifyUrl: form.shopifyUrl } : undefined,
       };
 
       let res: Response;
@@ -166,7 +170,10 @@ export default function SettingsPage() {
     }
   };
 
-  const handleLogout = () => { logout(); router.push('/login'); };
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
@@ -176,7 +183,10 @@ export default function SettingsPage() {
           <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Ecomerce</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/dashboard" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link
+              href="/dashboard"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
               ← Dashboard
             </Link>
             <button
@@ -253,7 +263,9 @@ export default function SettingsPage() {
                       URL Slug *
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">/store/</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                        /store/
+                      </span>
                       <input
                         type="text"
                         required
@@ -292,12 +304,29 @@ export default function SettingsPage() {
                       className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
+
+                  {/* Shopify URL */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Shopify URL Integration
+                    </label>
+                    <input
+                      type="text"
+                      value={form.shopifyUrl}
+                      onChange={(e) => setForm({ ...form, shopifyUrl: e.target.value })}
+                      placeholder="my-shopify-store.myshopify.com"
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
                 </div>
 
                 {/* Preview */}
                 {form.slug && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    🔗 Public URL: <span className="font-mono text-blue-600 dark:text-blue-400">/store/{form.slug}</span>
+                    🔗 Public URL:{' '}
+                    <span className="font-mono text-blue-600 dark:text-blue-400">
+                      /store/{form.slug}
+                    </span>
                   </p>
                 )}
 
@@ -312,7 +341,11 @@ export default function SettingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowCreateForm(false); setEditingStore(null); setError(null); }}
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setEditingStore(null);
+                      setError(null);
+                    }}
                     className="px-5 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     Cancel
@@ -327,7 +360,10 @@ export default function SettingsPage() {
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-16 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-16 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse"
+                  />
                 ))}
               </div>
             ) : stores.length === 0 ? (
@@ -366,7 +402,9 @@ export default function SettingsPage() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 dark:text-white truncate">{store.name}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">
+                          {store.name}
+                        </p>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-xs font-mono text-blue-600 dark:text-blue-400">
                             /store/{store.slug}
@@ -415,7 +453,9 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-900 dark:text-white">{user?.email}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Logged in · ID: {user?.id?.slice(0, 8)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Logged in · ID: {user?.id?.slice(0, 8)}
+              </p>
             </div>
             <button
               onClick={handleLogout}
@@ -443,14 +483,52 @@ export default function SettingsPage() {
         {/* ─── INTEGRATIONS SECTION ─── */}
         <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
           <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">Integrations</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Connect third-party services</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+            Connect third-party services
+          </p>
 
           <div className="space-y-3">
             {[
-              { icon: '💳', name: 'Stripe', desc: 'Payment processing', status: 'configured', statusText: 'Configured', color: 'green' },
-              { icon: '📦', name: 'CJ Dropshipping', desc: 'Product sourcing & fulfillment', status: 'pending', statusText: 'Not connected', color: 'gray' },
-              { icon: '🖼️', name: 'Cloudinary', desc: 'Image hosting & optimization', status: 'pending', statusText: 'Not connected', color: 'gray' },
-              { icon: '📧', name: 'Sendgrid', desc: 'Transactional email', status: 'pending', statusText: 'Not connected', color: 'gray' },
+              {
+                icon: '🛍️',
+                name: 'Shopify',
+                desc: 'Import products & sync orders',
+                status: 'configured',
+                statusText: 'Connected (See Shopify tab)',
+                color: 'green',
+              },
+              {
+                icon: '💳',
+                name: 'Stripe',
+                desc: 'Payment processing',
+                status: 'configured',
+                statusText: 'Configured',
+                color: 'green',
+              },
+              {
+                icon: '📦',
+                name: 'CJ Dropshipping',
+                desc: 'Product sourcing & fulfillment',
+                status: 'pending',
+                statusText: 'Not connected',
+                color: 'gray',
+              },
+              {
+                icon: '🖼️',
+                name: 'Cloudinary',
+                desc: 'Image hosting & optimization',
+                status: 'pending',
+                statusText: 'Not connected',
+                color: 'gray',
+              },
+              {
+                icon: '📧',
+                name: 'Sendgrid',
+                desc: 'Transactional email',
+                status: 'pending',
+                statusText: 'Not connected',
+                color: 'gray',
+              },
             ].map((integration) => (
               <div
                 key={integration.name}
@@ -461,16 +539,20 @@ export default function SettingsPage() {
                     {integration.icon}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white text-sm">{integration.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                      {integration.name}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{integration.desc}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                    integration.status === 'configured'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                  }`}>
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      integration.status === 'configured'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
                     {integration.statusText}
                   </span>
                   {integration.status === 'pending' && (

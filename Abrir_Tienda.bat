@@ -1,0 +1,3 @@
+@echo off
+echo Abriendo la Tienda Publica...
+start http://localhost:3000/store/tienda-demo

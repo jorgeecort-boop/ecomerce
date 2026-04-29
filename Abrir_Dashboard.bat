@@ -1,0 +1,3 @@
+@echo off
+echo Abriendo el Dashboard de Administracion...
+start http://localhost:3000/dashboard
