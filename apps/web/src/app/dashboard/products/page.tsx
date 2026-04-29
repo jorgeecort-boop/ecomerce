@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface Product {
   id: string;
@@ -149,7 +148,10 @@ export default function ProductsPage() {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/dashboard" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link
+              href="/dashboard"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
               ← Dashboard
             </Link>
             <button
@@ -173,7 +175,9 @@ export default function ProductsPage() {
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
               >
                 {stores.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -196,8 +200,12 @@ export default function ProductsPage() {
         {stores.length === 0 && !isLoading ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center transition-colors">
             <span className="text-4xl mb-4 block">🏪</span>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">No stores yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">Create a store first before adding products</p>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
+              No stores yet
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
+              Create a store first before adding products
+            </p>
             <Link
               href="/dashboard/settings"
               className="px-6 py-3 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
@@ -209,14 +217,19 @@ export default function ProductsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors">
             <div className="p-6 space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-14 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
+                <div
+                  key={i}
+                  className="h-14 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse"
+                />
               ))}
             </div>
           </div>
         ) : products.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center transition-colors">
             <span className="text-4xl mb-4 block">📦</span>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">No products yet</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
+              No products yet
+            </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
               Start adding products to your store
             </p>
@@ -238,19 +251,24 @@ export default function ProductsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
-                    {['Product', 'Price', 'Cost', 'Margin', 'Inventory', 'Status', 'Actions'].map((col) => (
-                      <th
-                        key={col}
-                        className={`px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${col === 'Actions' ? 'text-right' : 'text-left'}`}
-                      >
-                        {col}
-                      </th>
-                    ))}
+                    {['Product', 'Price', 'Cost', 'Margin', 'Inventory', 'Status', 'Actions'].map(
+                      (col) => (
+                        <th
+                          key={col}
+                          className={`px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${col === 'Actions' ? 'text-right' : 'text-left'}`}
+                        >
+                          {col}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {product.imageUrl ? (
@@ -265,8 +283,12 @@ export default function ProductsPage() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white text-sm">{product.title}</p>
-                            <p className="text-xs text-gray-400">{new Date(product.createdAt).toLocaleDateString()}</p>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">
+                              {product.title}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(product.createdAt).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -277,12 +299,16 @@ export default function ProductsPage() {
                         ${Number(product.costPrice).toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`text-sm font-medium ${Number(margin(product)) > 30 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                        <span
+                          className={`text-sm font-medium ${Number(margin(product)) > 30 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}
+                        >
                           {margin(product)}%
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`text-sm ${(product.inventory ?? 0) <= 10 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <span
+                          className={`text-sm ${(product.inventory ?? 0) <= 10 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}
+                        >
                           {product.inventory ?? '∞'}
                         </span>
                       </td>
@@ -296,7 +322,11 @@ export default function ProductsPage() {
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                           } ${togglingId === product.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
-                          {togglingId === product.id ? '...' : product.isPublished ? '● Published' : '○ Draft'}
+                          {togglingId === product.id
+                            ? '...'
+                            : product.isPublished
+                              ? '● Published'
+                              : '○ Draft'}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-right">

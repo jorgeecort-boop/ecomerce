@@ -3,9 +3,9 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useCart } from '@/hooks/useCart';
 import { ProductReviews } from '@/components/features/reviews/ProductReviews';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface Product {
   id: string;
@@ -61,15 +61,13 @@ export default function ProductPage({
         setProduct(productData);
 
         // Load related products from same store
-        const relatedRes = await fetch(
-          `${API_URL}/products/store/${storeData.id}/public?limit=4`
-        );
+        const relatedRes = await fetch(`${API_URL}/products/store/${storeData.id}/public?limit=4`);
         if (relatedRes.ok) {
           const relatedData = await relatedRes.json();
           setRelatedProducts(
-            (Array.isArray(relatedData) ? relatedData : []).filter(
-              (p: Product) => p.id !== productId
-            ).slice(0, 4)
+            (Array.isArray(relatedData) ? relatedData : [])
+              .filter((p: Product) => p.id !== productId)
+              .slice(0, 4)
           );
         }
       } catch (err: any) {
@@ -81,34 +79,25 @@ export default function ProductPage({
     load();
   }, [slug, productId]);
 
+  const { addItem } = useCart(slug);
+
   const handleAddToCart = () => {
     if (!product) return;
-    // Read existing cart from sessionStorage
-    const existing = JSON.parse(
-      sessionStorage.getItem(`cart_${slug}`) || '[]'
-    );
-    const idx = existing.findIndex((i: any) => i.id === product.id);
-    if (idx >= 0) {
-      existing[idx].quantity += quantity;
-    } else {
-      existing.push({
+    addItem(
+      {
         id: product.id,
         title: product.title,
         price: product.price,
         imageUrl: product.imageUrl,
-        quantity,
-      });
-    }
-    sessionStorage.setItem(`cart_${slug}`, JSON.stringify(existing));
+      },
+      quantity
+    );
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const allImages = product
-    ? [
-        product.imageUrl,
-        ...(product.images ?? []),
-      ].filter(Boolean) as string[]
+    ? ([product.imageUrl, ...(product.images ?? [])].filter(Boolean) as string[])
     : [];
 
   if (isLoading) {
@@ -260,9 +249,7 @@ export default function ProductPage({
                   <span className="text-sm text-green-600 dark:text-green-400">
                     In stock
                     {(product.inventory ?? 0) <= 10 && (
-                      <span className="text-orange-500 ml-1">
-                        — only {product.inventory} left!
-                      </span>
+                      <span className="text-orange-500 ml-1">— only {product.inventory} left!</span>
                     )}
                   </span>
                 </div>
@@ -303,7 +290,9 @@ export default function ProductPage({
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {addedToCart ? '✓ Added to Cart!' : `Add to Cart — ${format(Number(product.price) * quantity)}`}
+                {addedToCart
+                  ? '✓ Added to Cart!'
+                  : `Add to Cart — ${format(Number(product.price) * quantity)}`}
               </button>
             </div>
 
@@ -347,7 +336,9 @@ export default function ProductPage({
         <section className="mt-16 border-t dark:border-gray-800 pt-16">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <span>Customer Reviews</span>
-            <span className="text-sm font-normal px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">New Beta</span>
+            <span className="text-sm font-normal px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+              New Beta
+            </span>
           </h2>
           <ProductReviews productId={product.id} />
         </section>

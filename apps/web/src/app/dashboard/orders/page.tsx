@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@ecomerce/utils';
 
 interface Order {
   id: string;
@@ -90,7 +89,10 @@ export default function OrdersPage() {
       ? orders
       : orders.filter((o) => o.paymentStatus === filterStatus || o.status === filterStatus);
 
-  const allStatuses = ['ALL', ...Array.from(new Set(orders.map((o) => o.paymentStatus || o.status).filter(Boolean)))];
+  const allStatuses = [
+    'ALL',
+    ...Array.from(new Set(orders.map((o) => o.paymentStatus || o.status).filter(Boolean))),
+  ];
 
   const totalRevenue = orders
     .filter((o) => o.paymentStatus === 'PAID')
@@ -103,7 +105,10 @@ export default function OrdersPage() {
           <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Ecomerce</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/dashboard" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link
+              href="/dashboard"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
               ← Dashboard
             </Link>
             <button
@@ -134,7 +139,9 @@ export default function OrdersPage() {
               className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
             >
               {stores.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
           )}
@@ -194,14 +201,16 @@ export default function OrdersPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
-                    {['Order #', 'Customer', 'Items', 'Total', 'Payment', 'Status', 'Date', ''].map((col) => (
-                      <th
-                        key={col}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                      >
-                        {col}
-                      </th>
-                    ))}
+                    {['Order #', 'Customer', 'Items', 'Total', 'Payment', 'Status', 'Date', ''].map(
+                      (col) => (
+                        <th
+                          key={col}
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        >
+                          {col}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -210,7 +219,9 @@ export default function OrdersPage() {
                       <tr
                         key={order.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
-                        onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                        onClick={() =>
+                          setExpandedOrder(expandedOrder === order.id ? null : order.id)
+                        }
                       >
                         <td className="px-6 py-4 font-mono text-xs font-medium text-gray-900 dark:text-white">
                           {order.orderNumber ?? `#${order.id.slice(0, 8).toUpperCase()}`}
@@ -228,12 +239,16 @@ export default function OrdersPage() {
                           ${Number(order.total).toFixed(2)}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs rounded font-medium ${STATUS_COLORS[order.paymentStatus] ?? 'bg-gray-100 text-gray-600'}`}>
+                          <span
+                            className={`px-2 py-1 text-xs rounded font-medium ${STATUS_COLORS[order.paymentStatus] ?? 'bg-gray-100 text-gray-600'}`}
+                          >
                             {order.paymentStatus}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs rounded font-medium ${STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                          <span
+                            className={`px-2 py-1 text-xs rounded font-medium ${STATUS_COLORS[order.status] ?? 'bg-gray-100 text-gray-600'}`}
+                          >
                             {order.status}
                           </span>
                         </td>
@@ -245,17 +260,24 @@ export default function OrdersPage() {
                         </td>
                       </tr>
                       {expandedOrder === order.id && (
-                        <tr key={`${order.id}-detail`} className="bg-blue-50/30 dark:bg-blue-900/10">
+                        <tr
+                          key={`${order.id}-detail`}
+                          className="bg-blue-50/30 dark:bg-blue-900/10"
+                        >
                           <td colSpan={8} className="px-6 py-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
                                 <p className="text-xs text-gray-400 uppercase mb-1">Order ID</p>
-                                <p className="font-mono text-xs text-gray-900 dark:text-white break-all">{order.id}</p>
+                                <p className="font-mono text-xs text-gray-900 dark:text-white break-all">
+                                  {order.id}
+                                </p>
                               </div>
                               {order.trackingNumber && (
                                 <div>
                                   <p className="text-xs text-gray-400 uppercase mb-1">Tracking</p>
-                                  <p className="font-mono text-xs text-blue-600 dark:text-blue-400">{order.trackingNumber}</p>
+                                  <p className="font-mono text-xs text-blue-600 dark:text-blue-400">
+                                    {order.trackingNumber}
+                                  </p>
                                 </div>
                               )}
                               {order.items && order.items.length > 0 && (
@@ -263,7 +285,8 @@ export default function OrdersPage() {
                                   <p className="text-xs text-gray-400 uppercase mb-1">Items</p>
                                   {order.items.map((item: any, i: number) => (
                                     <p key={i} className="text-xs text-gray-700 dark:text-gray-300">
-                                      {item.quantity}x {item.title} — ${Number(item.price).toFixed(2)}
+                                      {item.quantity}x {item.title} — $
+                                      {Number(item.price).toFixed(2)}
                                     </p>
                                   ))}
                                 </div>

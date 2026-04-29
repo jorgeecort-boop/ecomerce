@@ -19,13 +19,11 @@ export class OrdersService {
       throw new NotFoundException('Store not found');
     }
 
-    // Calculate totals from items
     const subtotal = dto.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const shippingCost = dto.shippingCost || 0;
     const tax = dto.tax || 0;
     const total = subtotal + shippingCost + tax;
 
-    // Generate order number
     const orderCount = await this.prisma.order.count({
       where: { storeId: dto.storeId },
     });
@@ -84,10 +82,23 @@ export class OrdersService {
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          paymentStatus: true,
+          customerEmail: true,
+          customerPhone: true,
           items: {
-            include: {
-              product: { select: { id: true, title: true, images: true } },
+            select: {
+              id: true,
+              quantity: true,
+              price: true,
+              title: true,
+              imageUrl: true,
+              // Removed nested product include to prevent N+1 and over-fetching
             },
           },
         },
@@ -270,7 +281,6 @@ export class OrdersService {
 
     const isPaid = dto.paymentStatus === 'PAID';
 
-    // Validate and apply coupon if provided
     let discountAmount = 0;
     let couponId: string | undefined;
     if (dto.couponCode && dto.subtotal) {
@@ -344,7 +354,6 @@ export class OrdersService {
             data: { inventory: { decrement: item.quantity } },
           });
         }
-        // Redeem coupon after successful payment
         if (couponId) {
           await this.couponsService.redeem(couponId);
         }

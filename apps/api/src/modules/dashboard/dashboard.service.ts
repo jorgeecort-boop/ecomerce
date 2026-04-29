@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
+import { StoreAccessService } from '../stores/store-access.service';
 
 export interface DashboardStats {
   overview: {
@@ -17,7 +18,10 @@ export interface DashboardStats {
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storeAccess: StoreAccessService,
+  ) {}
 
   async getStoreStats(storeId: string): Promise<DashboardStats> {
     const [orders, products, totalRevenue, totalOrders, lowStock] = await Promise.all([
@@ -76,12 +80,7 @@ export class DashboardService {
   }
 
   async getUserStats(userId: string): Promise<DashboardStats> {
-    const stores = await this.prisma.store.findMany({
-      where: { ownerId: userId },
-      select: { id: true },
-    });
-
-    const storeIds = stores.map((s) => s.id);
+    const storeIds = await this.storeAccess.getUserStoreIds(userId);
 
     if (storeIds.length === 0) {
       return {

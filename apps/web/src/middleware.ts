@@ -1,17 +1,92 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
-export function middleware(request: NextRequest) {
+// In-memory session cache for JWT validation (5-minute TTL)
+// Reduces repeated JWT verification overhead on dashboard navigation
+const SESSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+interface SessionCacheEntry {
+  isValid: boolean;
+  expiresAt: number;
+  payload?: any;
+}
+const sessionCache = new Map<string, SessionCacheEntry>();
+
+// Clean expired cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, entry] of sessionCache.entries()) {
+    if (entry.expiresAt < now) {
+      sessionCache.delete(token);
+    }
+  }
+}, 60 * 1000); // Run every minute
+
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.NEXT_PUBLIC_JWT_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    console.warn('JWT_SECRET not configured, using fallback (should be set in production)');
+    return new TextEncoder().encode('super-secret-key-that-should-be-changed');
+  }
+  return new TextEncoder().encode(secret);
+}
+
+async function validateToken(token: string): Promise<{ isValid: boolean; payload?: any }> {
+  // Check cache first
+  const cached = sessionCache.get(token);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { isValid: cached.isValid, payload: cached.payload };
+  }
+
+  try {
+    const secret = getJwtSecret();
+    const { payload } = await jwtVerify(token, secret);
+    
+    // Check expiration
+    const expTime = payload.exp ? payload.exp * 1000 : 0;
+    const isValid = expTime > 0 && expTime >= Date.now();
+    
+    // Cache the result
+    sessionCache.set(token, {
+      isValid,
+      expiresAt: Date.now() + SESSION_CACHE_TTL,
+      payload: isValid ? payload : undefined,
+    });
+
+    return { isValid, payload: isValid ? payload : undefined };
+  } catch (err) {
+    // Cache invalid tokens briefly to prevent repeated verification attempts
+    sessionCache.set(token, {
+      isValid: false,
+      expiresAt: Date.now() + 60 * 1000, // 1 minute for invalid tokens
+    });
+    return { isValid: false };
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const isAuthPage =
     request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register';
   const isDashboard = request.nextUrl.pathname.startsWith('/dashboard');
 
-  if (isDashboard && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  let isValidToken = false;
+
+  if (token) {
+    const result = await validateToken(token);
+    isValidToken = result.isValid;
   }
 
-  if (isAuthPage && token) {
+  if (isDashboard && !isValidToken) {
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    if (token) {
+      response.cookies.delete('token'); // Invalid token, remove it
+      sessionCache.delete(token); // Clear from cache
+    }
+    return response;
+  }
+
+  if (isAuthPage && isValidToken) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

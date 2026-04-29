@@ -1,21 +1,17 @@
 /**
  * useCurrency hook
  *
- * Uses the FREE Frankfurter API (https://www.frankfurter.app)
- * No API key required. CORS enabled.
- *
  * Features:
- * - Auto-detects visitor's currency via ipapi.co (free, no auth)
+ * - Auto-detects visitor's currency via backend IP detection (cached)
  * - Fetches exchange rate from USD (the store's base currency)
  * - Formats prices in the visitor's local currency
  * - Caches the rate in sessionStorage to avoid repeated API calls
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { API_URL } from '@ecomerce/utils';
 
 const BASE_CURRENCY = 'USD';
-const FRANKFURTER_API = 'https://api.frankfurter.app';
-const IPAPI_URL = 'https://ipapi.co/json/';
 
 // Supported currencies with symbols
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -71,7 +67,7 @@ export function useCurrency(): CurrencyState {
     try {
       setIsLoading(true);
       const res = await fetch(
-        `${FRANKFURTER_API}/latest?from=${BASE_CURRENCY}&to=${targetCurrency}`,
+        `${API_URL}/currency/rates`,
         { signal: AbortSignal.timeout(5000) }
       );
       if (!res.ok) throw new Error('Rate fetch failed');
@@ -88,13 +84,13 @@ export function useCurrency(): CurrencyState {
     }
   }, []);
 
-  // Load available currencies from Frankfurter once
+  // Load available currencies from backend (cached)
   useEffect(() => {
-    fetch(`${FRANKFURTER_API}/currencies`, { signal: AbortSignal.timeout(4000) })
+    fetch(`${API_URL}/currency/rates`, { signal: AbortSignal.timeout(4000) })
       .then((r) => r.json())
       .then((data) => {
-        const keys = Object.keys(data);
-        // Add USD since Frankfurter excludes base from its /currencies list
+        const keys = Object.keys(data.rates || {});
+        // Add USD since it's the base
         if (!keys.includes('USD')) keys.unshift('USD');
         setAvailableCurrencies(keys.sort());
       })
@@ -104,7 +100,7 @@ export function useCurrency(): CurrencyState {
       });
   }, []);
 
-  // Auto-detect visitor's currency via ipapi.co
+  // Auto-detect visitor's currency via backend IP detection
   useEffect(() => {
     const cached = sessionStorage.getItem('detected_currency');
     if (cached) {
@@ -113,10 +109,13 @@ export function useCurrency(): CurrencyState {
       return;
     }
 
-    fetch(IPAPI_URL, { signal: AbortSignal.timeout(4000) })
+    fetch(`${API_URL}/currency/detect`, { 
+      signal: AbortSignal.timeout(4000),
+      credentials: 'include'
+    })
       .then((r) => r.json())
       .then((data) => {
-        const detected = data?.currency ?? 'USD';
+        const detected = data?.suggestedCurrency ?? 'USD';
         sessionStorage.setItem('detected_currency', detected);
         setCurrencyState(detected);
         fetchRate(detected);

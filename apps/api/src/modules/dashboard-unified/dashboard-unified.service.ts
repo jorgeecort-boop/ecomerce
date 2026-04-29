@@ -1,14 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
-import { ShopifyService } from '../shopify/shopify.service';
-import { AutoFulfillmentService } from '../shopify/auto-fulfillment.service';
+import type { IShopifyIntegrationService } from '../shopify/interfaces/shopify-integration.interface';
+import type { IAutoFulfillmentService } from '../shopify/interfaces/auto-fulfillment.interface';
 
 @Injectable()
 export class DashboardUnifiedService {
+  private readonly logger = new Logger(DashboardUnifiedService.name);
+
   constructor(
     private prisma: PrismaService,
-    private shopifyService: ShopifyService,
-    private autoFulfillmentService: AutoFulfillmentService
+    private shopifyIntegration: IShopifyIntegrationService,
+    private autoFulfillmentService: IAutoFulfillmentService,
   ) {}
 
   async getUnifiedStats(userId?: string, storeId?: string) {
@@ -65,12 +67,12 @@ export class DashboardUnifiedService {
   }
 
   private async getSupplierStats(storeId?: string) {
-    const where = storeId ? { storeId } : {};
+    const where: any = storeId ? { storeId } : {};
 
     const [pending, shipped, delivered] = await Promise.all([
-      this.prisma.supplierOrder.count({ where: { status: 'PENDING' } }),
-      this.prisma.supplierOrder.count({ where: { status: 'SHIPPED' } }),
-      this.prisma.supplierOrder.count({ where: { status: 'DELIVERED' } }),
+      this.prisma.supplierOrder.count({ where: { status: 'PENDING', ...where } }),
+      this.prisma.supplierOrder.count({ where: { status: 'SHIPPED', ...where } }),
+      this.prisma.supplierOrder.count({ where: { status: 'DELIVERED', ...where } }),
     ]);
 
     return {
@@ -91,10 +93,33 @@ export class DashboardUnifiedService {
       storeIds.push(...stores.map((s) => s.id));
     }
 
+    const where: any = { storeId: storeIds.length ? { in: storeIds } : undefined };
+    if (status) where.status = status;
+
     const [ecomerceOrders, shopifyOrders, supplierOrders] = await Promise.all([
       this.prisma.order.findMany({
-        where: { storeId: { in: storeIds.length ? storeIds : undefined } },
-        include: { store: true, items: true },
+        where,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          paymentStatus: true,
+          customerEmail: true,
+          customerPhone: true,
+          store: { select: { id: true, name: true, slug: true } },
+          items: {
+            select: {
+              id: true,
+              quantity: true,
+              price: true,
+              title: true,
+              imageUrl: true,
+              product: { select: { id: true, title: true } },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),

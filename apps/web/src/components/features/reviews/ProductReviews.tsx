@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProductReviewForm } from './ProductReviewForm';
+import { API_URL } from '@ecomerce/utils';
 
 interface Review {
   id: string;
@@ -21,8 +22,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
 
   const fetchReviews = async () => {
     try {
-      const nextApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${nextApiUrl}/reviews/product/${productId}`);
+      const res = await fetch(`${API_URL}/reviews/product/${productId}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data);
@@ -65,21 +65,24 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         ) : (
           <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
             {reviews.map((review) => (
-              <div key={review.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div
+                key={review.id}
+                className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
+              >
                 <div className="flex items-center gap-1 mb-2 text-yellow-400 text-sm">
                   {[...Array(review.rating)].map((_, i) => (
                     <span key={i}>★</span>
                   ))}
                   {[...Array(5 - review.rating)].map((_, i) => (
-                    <span key={i} className="text-gray-300 dark:text-gray-600">★</span>
+                    <span key={i} className="text-gray-300 dark:text-gray-600">
+                      ★
+                    </span>
                   ))}
                   <span className="text-xs text-gray-400 ml-2">
                     {new Date(review.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {review.comment}
-                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{review.comment}</p>
               </div>
             ))}
           </div>
