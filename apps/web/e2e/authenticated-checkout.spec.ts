@@ -1,11 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { AuthenticatedHelpers } from './authenticated-helpers';
 
-// TODO: unskip once test users (vendor-test@ecomerce.com / customer-test@ecomerce.com)
-// are seeded in the target DB. Tracked: implement gated POST /api/test/create-user
-// endpoint enabled only when NODE_ENV !== 'production' OR when E2E_SEED_TOKEN matches.
-// See AuthenticatedHelpers.createTestCustomer for the expected contract.
-test.describe.skip('Authenticated Checkout Flow', () => {
+test.describe('Authenticated Checkout Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Login as customer - assuming test customer user exists
     await AuthenticatedHelpers.loginAsCustomer(page);
