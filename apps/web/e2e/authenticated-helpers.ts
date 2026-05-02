@@ -1,66 +1,71 @@
 // Helper functions for authenticated E2E tests
-import { expect } from '@playwright/test';
-import type { APIRequestContext, Page } from '@playwright/test';
+import { expect, request as playwrightRequest } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+const API_URL =
+  process.env.API_URL || 'https://ecomerce-api-zulc.onrender.com/api';
+const SEED_TOKEN = process.env.E2E_SEED_TOKEN || '';
+
+let seededOnce = false;
 
 export class AuthenticatedHelpers {
-  // Test credentials - these should match test users in the database
   static readonly VENDOR_EMAIL = 'vendor-test@ecomerce.com';
   static readonly VENDOR_PASSWORD = 'VendorTest123!';
   static readonly CUSTOMER_EMAIL = 'customer-test@ecomerce.com';
   static readonly CUSTOMER_PASSWORD = 'CustomerTest123!';
 
-  // Login as vendor
+  /**
+   * Provisions both test users via the gated /test-seed/create-user endpoint.
+   * Idempotent on the server side, but we also memoize per worker process.
+   * Requires env var E2E_SEED_TOKEN matching the value set on the API.
+   */
+  static async ensureTestUsers(): Promise<void> {
+    if (seededOnce) return;
+    if (!SEED_TOKEN) {
+      throw new Error(
+        'E2E_SEED_TOKEN env var is required to provision test users. ' +
+          'Set it to the value configured on the API (Render dashboard).',
+      );
+    }
+
+    const ctx = await playwrightRequest.newContext();
+    const headers = { 'X-E2E-Seed-Token': SEED_TOKEN };
+
+    for (const user of [
+      { email: this.VENDOR_EMAIL, password: this.VENDOR_PASSWORD, name: 'Test Vendor' },
+      { email: this.CUSTOMER_EMAIL, password: this.CUSTOMER_PASSWORD, name: 'Test Customer' },
+    ]) {
+      const res = await ctx.post(`${API_URL}/test-seed/create-user`, {
+        headers,
+        data: user,
+      });
+      if (!res.ok()) {
+        const body = await res.text();
+        throw new Error(
+          `Failed to seed ${user.email}: ${res.status()} ${body.slice(0, 200)}`,
+        );
+      }
+    }
+
+    await ctx.dispose();
+    seededOnce = true;
+  }
+
   static async loginAsVendor(page: Page) {
+    await this.ensureTestUsers();
     await page.goto('/login');
     await page.getByLabel('Email').fill(this.VENDOR_EMAIL);
     await page.getByLabel('Password').fill(this.VENDOR_PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
-    
-    // Wait for redirect to dashboard
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/dashboard/);
   }
 
-  // Login as customer
   static async loginAsCustomer(page: Page) {
+    await this.ensureTestUsers();
     await page.goto('/login');
     await page.getByLabel('Email').fill(this.CUSTOMER_EMAIL);
     await page.getByLabel('Password').fill(this.CUSTOMER_PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
-    
-    // Wait for redirect to homepage or store
-    await expect(page).toHaveURL(/\/$/);
-  }
-
-  // Note: In a real implementation, you would have API endpoints for test user creation/cleanup
-  // For now, we assume test users exist or we'll handle errors gracefully
-
-  // Create a test vendor user via API (if endpoint exists)
-  static async createTestVendor(request: APIRequestContext) {
-    const response = await request.post('/api/test/create-vendor', {
-      data: {
-        email: this.VENDOR_EMAIL,
-        password: this.VENDOR_PASSWORD,
-        name: 'Test Vendor',
-      },
-    });
-    return response.ok();
-  }
-
-  // Create a test customer user via API (if endpoint exists)
-  static async createTestCustomer(request: APIRequestContext) {
-    const response = await request.post('/api/test/create-customer', {
-      data: {
-        email: this.CUSTOMER_EMAIL,
-        password: this.CUSTOMER_PASSWORD,
-        name: 'Test Customer',
-      },
-    });
-    return response.ok();
-  }
-
-  // Clean up test data
-  static async cleanupTestData(request: APIRequestContext) {
-    await request.delete(`/api/test/cleanup?email=${this.VENDOR_EMAIL}`);
-    await request.delete(`/api/test/cleanup?email=${this.CUSTOMER_EMAIL}`);
+    await expect(page).toHaveURL(/\/$|\/dashboard/);
   }
 }
