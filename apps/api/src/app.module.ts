@@ -20,6 +20,7 @@ import { HealthController } from './common/health.controller';
 import { TelegramModule } from './common/telegram.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { TestSeedModule } from './modules/test-seed/test-seed.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     TelegramModule,
     TelegramBotModule,
     CouponsModule,
+    TestSeedModule,
   ],
   controllers: [HealthController],
 })
