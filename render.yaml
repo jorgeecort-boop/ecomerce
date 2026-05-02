@@ -14,7 +14,7 @@ services:
       - key: PORT
         value: 3001
       - key: DATABASE_URL
-        value: 'postgresql://postgres.tzflwwbokrsxfibmqirm:S8%3Fe_TE%26A4uG%21%2F2@aws-1-us-east-2.pooler.supabase.com:5432/postgres'
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

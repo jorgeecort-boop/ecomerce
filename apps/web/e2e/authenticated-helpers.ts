@@ -2,9 +2,6 @@
 import { expect } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 
-// Base URL should match the frontend deployment
-const BASE_URL = process.env.BASE_URL || 'https://ecomerce-web.vercel.app';
-
 export class AuthenticatedHelpers {
   // Test credentials - these should match test users in the database
   static readonly VENDOR_EMAIL = 'vendor-test@ecomerce.com';
@@ -14,24 +11,24 @@ export class AuthenticatedHelpers {
 
   // Login as vendor
   static async loginAsVendor(page: Page) {
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await page.getByLabel('Email').fill(this.VENDOR_EMAIL);
     await page.getByLabel('Password').fill(this.VENDOR_PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
     
     // Wait for redirect to dashboard
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL(/\/dashboard$/);
   }
 
   // Login as customer
   static async loginAsCustomer(page: Page) {
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await page.getByLabel('Email').fill(this.CUSTOMER_EMAIL);
     await page.getByLabel('Password').fill(this.CUSTOMER_PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
     
     // Wait for redirect to homepage or store
-    await expect(page).toHaveURL(BASE_URL);
+    await expect(page).toHaveURL(/\/$/);
   }
 
   // Note: In a real implementation, you would have API endpoints for test user creation/cleanup

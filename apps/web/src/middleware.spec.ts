@@ -2,12 +2,14 @@
  * @jest-environment node
  */
 import { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 import { middleware } from './middleware';
-import { SignJWT } from 'jose';
+
+jest.mock('jose', () => ({
+  jwtVerify: jest.fn(),
+}));
 
 describe('Middleware Security', () => {
-  const secret = new TextEncoder().encode('test-secret');
-
   beforeAll(() => {
     process.env.NEXT_PUBLIC_JWT_SECRET = 'test-secret';
   });
@@ -15,6 +17,7 @@ describe('Middleware Security', () => {
   beforeEach(() => {
     // Clear session cache between tests
     jest.resetModules();
+    jest.clearAllMocks();
   });
 
   it('should redirect to login if no token for dashboard', async () => {
@@ -25,6 +28,7 @@ describe('Middleware Security', () => {
   });
 
   it('should redirect to login if token is invalid', async () => {
+    (jwtVerify as jest.Mock).mockRejectedValueOnce(new Error('invalid-token'));
     const req = new NextRequest('http://localhost:3000/dashboard');
     req.cookies.set('token', 'invalid-token-string');
     
@@ -34,13 +38,12 @@ describe('Middleware Security', () => {
   });
 
   it('should allow access to dashboard if token is valid', async () => {
-    const token = await new SignJWT({ id: '123' })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('2h')
-      .sign(secret);
+    (jwtVerify as jest.Mock).mockResolvedValueOnce({
+      payload: { id: '123', exp: Math.floor(Date.now() / 1000) + 60 * 60 },
+    });
 
     const req = new NextRequest('http://localhost:3000/dashboard');
-    req.cookies.set('token', token);
+    req.cookies.set('token', 'valid-token');
     
     const res = await middleware(req);
     // NextResponse.next() doesn't set status 307
@@ -48,13 +51,12 @@ describe('Middleware Security', () => {
   });
 
   it('should redirect authenticated user from login to dashboard', async () => {
-    const token = await new SignJWT({ id: '123' })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('2h')
-      .sign(secret);
+    (jwtVerify as jest.Mock).mockResolvedValueOnce({
+      payload: { id: '123', exp: Math.floor(Date.now() / 1000) + 60 * 60 },
+    });
 
     const req = new NextRequest('http://localhost:3000/login');
-    req.cookies.set('token', token);
+    req.cookies.set('token', 'valid-token');
     
     const res = await middleware(req);
     expect(res.status).toBe(307);
@@ -62,13 +64,12 @@ describe('Middleware Security', () => {
   });
 
   it('should cache valid token validation', async () => {
-    const token = await new SignJWT({ id: '456' })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('2h')
-      .sign(secret);
+    (jwtVerify as jest.Mock).mockResolvedValue({
+      payload: { id: '456', exp: Math.floor(Date.now() / 1000) + 60 * 60 },
+    });
 
     const req = new NextRequest('http://localhost:3000/dashboard');
-    req.cookies.set('token', token);
+    req.cookies.set('token', 'cached-valid-token');
     
     // First request
     const res1 = await middleware(req);
@@ -77,5 +78,6 @@ describe('Middleware Security', () => {
     // Second request should use cache
     const res2 = await middleware(req);
     expect(res2.status).toBe(200);
+    expect(jwtVerify).toHaveBeenCalledTimes(1);
   });
 });

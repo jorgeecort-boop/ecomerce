@@ -31,6 +31,7 @@ describe('OrdersService - Optimized Queries', () => {
             },
             store: {
               findUnique: jest.fn().mockResolvedValue({ id: 'store1', slug: 'store1', ownerId: 'user1' }),
+              findFirst: jest.fn().mockResolvedValue({ id: 'store1' }),
             },
             orderItem: { findMany: jest.fn() },
             product: { update: jest.fn() },
@@ -125,6 +126,40 @@ describe('OrdersService - Optimized Queries', () => {
         where: { id: 'prod1' },
         data: { inventory: { decrement: 2 } },
       });
+    });
+  });
+
+  describe('validateGuestShipping', () => {
+    it('should return valid true when store exists and shipping data is complete', async () => {
+      const result = await service.validateGuestShipping('store-1', {
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        address: '123 Main St',
+        city: 'Bogota',
+        postalCode: '110111',
+        country: 'Colombia',
+      });
+
+      expect(prisma.store.findFirst).toHaveBeenCalledWith({
+        where: { slug: 'store-1', isActive: true },
+        select: { id: true },
+      });
+      expect(result).toEqual({ valid: true });
+    });
+
+    it('should throw BadRequestException when required shipping field is missing', async () => {
+      await expect(
+        service.validateGuestShipping('store-1', {
+          firstName: 'Test',
+          lastName: '',
+          email: 'test@example.com',
+          address: '123 Main St',
+          city: 'Bogota',
+          postalCode: '110111',
+          country: 'Colombia',
+        })
+      ).rejects.toThrow('Shipping information is incomplete');
     });
   });
 });

@@ -1,10 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../../config/prisma.service';
+import { DashboardService } from './dashboard.service';
+import { StoreAccessService } from '../stores/store-access.service';
+
+// Mock the entire StoreAccessService
+jest.mock('../stores/store-access.service');
 
 describe('DashboardService', () => {
   let service: DashboardService;
   let prisma: PrismaService;
+  let mockStoreAccessService: jest.Mocked<StoreAccessService>;
 
   const mockPrisma = {
     store: {
@@ -26,11 +31,16 @@ describe('DashboardService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DashboardService, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [
+        DashboardService,
+        { provide: PrismaService, useValue: mockPrisma },
+        StoreAccessService,
+      ],
     }).compile();
 
     service = module.get<DashboardService>(DashboardService);
     prisma = module.get<PrismaService>(PrismaService);
+    mockStoreAccessService = module.get(StoreAccessService);
 
     jest.clearAllMocks();
   });
@@ -104,6 +114,7 @@ describe('DashboardService', () => {
 
   describe('getUserStats', () => {
     it('should return empty stats when user has no stores', async () => {
+      mockStoreAccessService.getUserStoreIds.mockResolvedValue([]);
       mockPrisma.store.findMany.mockResolvedValue([]);
 
       const result = await service.getUserStats('user-1');
@@ -115,6 +126,7 @@ describe('DashboardService', () => {
     });
 
     it('should aggregate stats across all user stores', async () => {
+      mockStoreAccessService.getUserStoreIds.mockResolvedValue(['store-1', 'store-2']);
       mockPrisma.store.findMany.mockResolvedValue([{ id: 'store-1' }, { id: 'store-2' }]);
       mockPrisma.order.findMany.mockResolvedValue([mockOrder]);
       mockPrisma.product.findMany.mockResolvedValue([
