@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
-import type { IShopifyIntegrationService } from '../shopify/interfaces/shopify-integration.interface';
-import type { IAutoFulfillmentService } from '../shopify/interfaces/auto-fulfillment.interface';
+import { ShopifyService } from '../shopify/shopify.service';
+import { AutoFulfillmentService } from '../shopify/auto-fulfillment.service';
 
 @Injectable()
 export class DashboardUnifiedService {
@@ -9,8 +9,8 @@ export class DashboardUnifiedService {
 
   constructor(
     private prisma: PrismaService,
-    private shopifyIntegration: IShopifyIntegrationService,
-    private autoFulfillmentService: IAutoFulfillmentService,
+    private shopifyIntegration: ShopifyService,
+    private autoFulfillmentService: AutoFulfillmentService,
   ) {}
 
   async getUnifiedStats(userId?: string, storeId?: string) {
