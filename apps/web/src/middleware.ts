@@ -5,6 +5,8 @@ import { jwtVerify } from 'jose';
 // In-memory session cache for JWT validation (5-minute TTL)
 // Reduces repeated JWT verification overhead on dashboard navigation
 const SESSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 interface SessionCacheEntry {
   isValid: boolean;
   expiresAt: number;
@@ -12,26 +14,50 @@ interface SessionCacheEntry {
 }
 const sessionCache = new Map<string, SessionCacheEntry>();
 
-// Clean expired cache entries periodically
-setInterval(() => {
-  const now = Date.now();
+function cleanExpiredSessionCache(now = Date.now()) {
   for (const [token, entry] of sessionCache.entries()) {
     if (entry.expiresAt < now) {
       sessionCache.delete(token);
     }
   }
-}, 60 * 1000); // Run every minute
+}
 
-function getJwtSecret(): Uint8Array {
+function getJwtSecret(): Uint8Array | null {
   const secret = process.env.NEXT_PUBLIC_JWT_SECRET || process.env.JWT_SECRET;
   if (!secret) {
-    console.warn('JWT_SECRET not configured, using fallback (should be set in production)');
-    return new TextEncoder().encode('super-secret-key-that-should-be-changed');
+    return null;
   }
   return new TextEncoder().encode(secret);
 }
 
+async function validateTokenWithApi(token: string): Promise<{ isValid: boolean; payload?: any }> {
+  try {
+    const response = await fetch(`${API_URL}/auth/validate`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return { isValid: false };
+    }
+
+    const json = await response.json();
+    const data = json.data || json;
+
+    return {
+      isValid: data.valid === true,
+      payload: data.user,
+    };
+  } catch {
+    return { isValid: false };
+  }
+}
+
 async function validateToken(token: string): Promise<{ isValid: boolean; payload?: any }> {
+  cleanExpiredSessionCache();
+
   // Check cache first
   const cached = sessionCache.get(token);
   if (cached && cached.expiresAt > Date.now()) {
@@ -40,12 +66,22 @@ async function validateToken(token: string): Promise<{ isValid: boolean; payload
 
   try {
     const secret = getJwtSecret();
+    if (!secret) {
+      const result = await validateTokenWithApi(token);
+      sessionCache.set(token, {
+        isValid: result.isValid,
+        expiresAt: Date.now() + (result.isValid ? SESSION_CACHE_TTL : 60 * 1000),
+        payload: result.payload,
+      });
+      return result;
+    }
+
     const { payload } = await jwtVerify(token, secret);
-    
+
     // Check expiration
     const expTime = payload.exp ? payload.exp * 1000 : 0;
     const isValid = expTime > 0 && expTime >= Date.now();
-    
+
     // Cache the result
     sessionCache.set(token, {
       isValid,

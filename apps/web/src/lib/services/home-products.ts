@@ -17,6 +17,7 @@ export async function getHomeProducts(limit = 8): Promise<HomeCategoryCard[]> {
     throw new Error('Failed to load products');
   }
 
-  const data = (await response.json()) as HomeCategoryCard[];
+  const json = await response.json();
+  const data = (json.data || json) as HomeCategoryCard[];
   return Array.isArray(data) ? data : [];
 }

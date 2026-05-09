@@ -31,6 +31,8 @@ describe('SupplierApiService', () => {
   let service: SupplierApiService;
   let mockCJ: Partial<CJDropshippingService>;
   let mockAE: Partial<AliExpressService>;
+  let suppliersService: any;
+  let prisma: any;
 
   beforeEach(() => {
     mockCJ = {
@@ -40,7 +42,7 @@ describe('SupplierApiService', () => {
             pid: 'cj-001',
             productName: 'CJ Wireless Earbuds',
             productNameEn: 'CJ Wireless Earbuds',
-            sellPrice: 8.50,
+            sellPrice: 8.5,
             productWeight: 50,
             productUnit: 'pc',
             categoryId: '1',
@@ -56,7 +58,7 @@ describe('SupplierApiService', () => {
         pid: 'cj-001',
         productName: 'CJ Wireless Earbuds',
         productNameEn: 'CJ Wireless Earbuds',
-        sellPrice: 8.50,
+        sellPrice: 8.5,
         productWeight: 50,
         productUnit: 'pc',
         categoryId: '1',
@@ -94,16 +96,28 @@ describe('SupplierApiService', () => {
     };
 
     const configService = { get: jest.fn() } as unknown as ConfigService;
-    const suppliersService = {
+    suppliersService = {
       findById: jest.fn().mockResolvedValue({ code: 'cjdropshipping', name: 'CJ' }),
+      findByCode: jest
+        .fn()
+        .mockResolvedValue({ id: 'supplier-1', code: 'cjdropshipping', name: 'CJ' }),
+      create: jest.fn(),
       syncProductFromExternal: jest.fn(),
     } as any;
+    prisma = {
+      product: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
+    };
 
     service = new SupplierApiService(
       configService,
       suppliersService,
       mockCJ as CJDropshippingService,
       mockAE as AliExpressService,
+      prisma
     );
   });
 
@@ -113,8 +127,8 @@ describe('SupplierApiService', () => {
       expect(mockCJ.searchProducts).toHaveBeenCalledWith('earbuds', 1, 20);
       expect(result.products.length).toBe(1);
       // Verify price mapping (1.4x markup)
-      expect(result.products[0].price).toBeCloseTo(8.50 * 1.4, 1);
-      expect(result.products[0].costPrice).toBe(8.50);
+      expect(result.products[0].price).toBeCloseTo(8.5 * 1.4, 1);
+      expect(result.products[0].costPrice).toBe(8.5);
     });
 
     it('should route AliExpress queries to AliExpressService', async () => {
@@ -131,9 +145,7 @@ describe('SupplierApiService', () => {
     });
 
     it('should fall back to mock when CJ API throws', async () => {
-      (mockCJ.searchProducts as jest.Mock).mockRejectedValue(
-        new Error('CJ API unavailable'),
-      );
+      (mockCJ.searchProducts as jest.Mock).mockRejectedValue(new Error('CJ API unavailable'));
       const result = await service.searchProducts('cjdropshipping', 'earbuds');
       // Should get mock data, not throw
       expect(result.products.length).toBeGreaterThan(0);
@@ -152,6 +164,43 @@ describe('SupplierApiService', () => {
       const result = await service.getProductDetails('aliexpress', 'ae-001');
       expect(result).not.toBeNull();
       expect(result!.title).toBe('AE Bluetooth Speaker');
+    });
+  });
+
+  describe('importToStore', () => {
+    it('should create a store product from supplier product data', async () => {
+      suppliersService.syncProductFromExternal.mockResolvedValue({
+        id: 'supplier-product-1',
+      });
+      suppliersService.mapToProduct = jest.fn().mockResolvedValue({
+        id: 'supplier-product-1',
+        ourProductId: 'product-1',
+      });
+      prisma.product.create.mockResolvedValue({ id: 'product-1' });
+
+      const result = await service.importToStore('cjdropshipping', ['cj-001'], 'store-1', 2);
+
+      expect(result).toEqual({ success: ['cj-001'], failed: [] });
+      expect(suppliersService.syncProductFromExternal).toHaveBeenCalledWith(
+        'supplier-1',
+        expect.objectContaining({
+          externalId: 'cj-001',
+          title: 'CJ Wireless Earbuds',
+          costPrice: 8.5,
+        })
+      );
+      expect(prisma.product.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          storeId: 'store-1',
+          title: 'CJ Wireless Earbuds',
+          price: 17,
+          costPrice: 8.5,
+          supplierId: 'supplier-1',
+          supplierProductId: 'supplier-product-1',
+          isPublished: false,
+        }),
+      });
+      expect(suppliersService.mapToProduct).toHaveBeenCalledWith('supplier-product-1', 'product-1');
     });
   });
 });
