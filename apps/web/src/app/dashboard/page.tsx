@@ -111,6 +111,11 @@ export default function DashboardPage() {
       icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
     },
     {
+      href: '/dashboard/suppliers',
+      label: 'Suppliers',
+      icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9',
+    },
+    {
       href: '/dashboard/shopify',
       label: 'Shopify',
       icon: 'M9 3v2m0-2h6m0 0v2m-6 2H9m0 0V3m6 0h6M9 17v2m0-2h6m0 0v2m-6-2H9m0 0v-2m6 2h6',

@@ -76,11 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (res.ok) {
             const data = await res.json();
+            const tokens = data.data || data;
             // Save without re-triggering scheduleRefresh inside saveAuth
-            setToken(data.accessToken);
-            localStorage.setItem('token', data.accessToken);
-            localStorage.setItem('refreshToken', data.refreshToken);
-            setTokenCookie(data.accessToken);
+            setToken(tokens.accessToken);
+            localStorage.setItem('token', tokens.accessToken);
+            localStorage.setItem('refreshToken', tokens.refreshToken);
+            setTokenCookie(tokens.accessToken);
             scheduleRefresh(); // schedule next refresh
           } else {
             // Refresh failed — user must re-login
@@ -110,11 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      setTokenCookie(storedToken);
-      scheduleRefresh();
+    if (storedToken && storedUser && storedUser !== 'undefined') {
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        setTokenCookie(storedToken);
+        scheduleRefresh();
+      } catch (e) {
+        doLogout();
+      }
     }
     setIsLoading(false);
 
@@ -125,36 +130,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Login ────────────────────────────────────────────────────────────────
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: 'Login failed' }));
-      throw new Error(error.message || 'Login failed');
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: 'Login failed' }));
+        throw new Error(error.message || 'Login failed');
+      }
+
+      const json = await res.json();
+      saveAuth(json.data || json);
+    } catch (err: any) {
+      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+        throw new Error(
+          `Cannot connect to API at ${API_URL}. Please check if the server is running.`
+        );
+      }
+      throw err;
     }
-
-    const data = await res.json();
-    saveAuth(data);
   };
 
   // ── Register ──────────────────────────────────────────────────────────────
   const register = async (email: string, password: string, name?: string) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
 
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: 'Registration failed' }));
-      throw new Error(error.message || 'Registration failed');
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: 'Registration failed' }));
+        throw new Error(error.message || 'Registration failed');
+      }
+
+      const json = await res.json();
+      saveAuth(json.data || json);
+    } catch (err: any) {
+      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+        throw new Error(
+          `Cannot connect to API at ${API_URL}. Please check if the server is running.`
+        );
+      }
+      throw err;
     }
-
-    const data = await res.json();
-    saveAuth(data);
   };
 
   return (
