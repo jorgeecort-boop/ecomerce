@@ -24,7 +24,8 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     const error = await response.json().catch(() => ({ message: 'An error occurred' }));
     throw new Error(error.message || `HTTP error! status: ${response.status}`);
   }
-  return response.json();
+  const json = await response.json();
+  return (json.data || json) as T;
 }
 
 export interface ShopifyStats {

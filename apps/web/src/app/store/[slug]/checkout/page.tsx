@@ -184,9 +184,10 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
       }
 
       const data = await res.json();
+      const unwrapped = data.data || data;
 
       // Redirect to MercadoPago checkout
-      window.location.href = data.sandboxInitPoint || data.initPoint;
+      window.location.href = unwrapped.sandboxInitPoint || unwrapped.initPoint;
     } catch {
       setError('Failed to connect to payment service');
     } finally {

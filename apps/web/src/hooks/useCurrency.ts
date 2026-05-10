@@ -15,14 +15,45 @@ const BASE_CURRENCY = 'USD';
 
 // Supported currencies with symbols
 const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'C$',
-  AUD: 'A$', CHF: 'CHF', CNY: '¥', MXN: 'MX$', BRL: 'R$',
-  INR: '₹', KRW: '₩', SGD: 'S$', HKD: 'HK$', SEK: 'kr',
-  NOK: 'kr', DKK: 'kr', PLN: 'zł', CZK: 'Kč', HUF: 'Ft',
-  RON: 'lei', BGN: 'лв', HRK: 'kn', ISK: 'kr', TRY: '₺',
-  RUB: '₽', ZAR: 'R', AED: 'د.إ', SAR: '﷼', CLP: 'CLP$',
-  COP: 'COP$', ARS: 'ARS$', PEN: 'S/', VND: '₫', THB: '฿',
-  MYR: 'RM', IDR: 'Rp', PHP: '₱', NZD: 'NZ$',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CAD: 'C$',
+  AUD: 'A$',
+  CHF: 'CHF',
+  CNY: '¥',
+  MXN: 'MX$',
+  BRL: 'R$',
+  INR: '₹',
+  KRW: '₩',
+  SGD: 'S$',
+  HKD: 'HK$',
+  SEK: 'kr',
+  NOK: 'kr',
+  DKK: 'kr',
+  PLN: 'zł',
+  CZK: 'Kč',
+  HUF: 'Ft',
+  RON: 'lei',
+  BGN: 'лв',
+  HRK: 'kn',
+  ISK: 'kr',
+  TRY: '₺',
+  RUB: '₽',
+  ZAR: 'R',
+  AED: 'د.إ',
+  SAR: '﷼',
+  CLP: 'CLP$',
+  COP: 'COP$',
+  ARS: 'ARS$',
+  PEN: 'S/',
+  VND: '₫',
+  THB: '฿',
+  MYR: 'RM',
+  IDR: 'Rp',
+  PHP: '₱',
+  NZD: 'NZ$',
 };
 
 export interface CurrencyState {
@@ -47,7 +78,9 @@ export function useCurrency(): CurrencyState {
   const [availableCurrencies, setAvailableCurrencies] = useState<string[]>([BASE_CURRENCY]);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch the exchange rate from USD → target currency
   const fetchRate = useCallback(async (targetCurrency: string) => {
@@ -66,12 +99,10 @@ export function useCurrency(): CurrencyState {
 
     try {
       setIsLoading(true);
-      const res = await fetch(
-        `${API_URL}/currency/rates`,
-        { signal: AbortSignal.timeout(5000) }
-      );
+      const res = await fetch(`${API_URL}/currency/rates`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error('Rate fetch failed');
-      const data = await res.json();
+      const json = await res.json();
+      const data = json.data || json;
       const fetchedRate = data.rates[targetCurrency];
       if (!fetchedRate) throw new Error('Currency not found');
       rateCache[targetCurrency] = fetchedRate;
@@ -88,7 +119,8 @@ export function useCurrency(): CurrencyState {
   useEffect(() => {
     fetch(`${API_URL}/currency/rates`, { signal: AbortSignal.timeout(4000) })
       .then((r) => r.json())
-      .then((data) => {
+      .then((json) => {
+        const data = json.data || json;
         const keys = Object.keys(data.rates || {});
         // Add USD since it's the base
         if (!keys.includes('USD')) keys.unshift('USD');
@@ -109,12 +141,13 @@ export function useCurrency(): CurrencyState {
       return;
     }
 
-    fetch(`${API_URL}/currency/detect`, { 
+    fetch(`${API_URL}/currency/detect`, {
       signal: AbortSignal.timeout(4000),
-      credentials: 'include'
+      credentials: 'include',
     })
       .then((r) => r.json())
-      .then((data) => {
+      .then((json) => {
+        const data = json.data || json;
         const detected = data?.suggestedCurrency ?? 'USD';
         sessionStorage.setItem('detected_currency', detected);
         setCurrencyState(detected);

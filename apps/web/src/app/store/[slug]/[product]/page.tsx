@@ -52,20 +52,23 @@ export default function ProductPage({
         const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`);
         if (!storeRes.ok) throw new Error('Store not found');
         const storeData = await storeRes.json();
-        setStore(storeData);
+        const store = (storeData.data || storeData) as Store;
+        setStore(store);
 
         // Load product details
         const productRes = await fetch(`${API_URL}/products/${productId}`);
         if (!productRes.ok) throw new Error('Product not found');
         const productData = await productRes.json();
-        setProduct(productData);
+        const product = (productData.data || productData) as Product;
+        setProduct(product);
 
         // Load related products from same store
-        const relatedRes = await fetch(`${API_URL}/products/store/${storeData.id}/public?limit=4`);
+        const relatedRes = await fetch(`${API_URL}/products/store/${store.id}/public?limit=4`);
         if (relatedRes.ok) {
           const relatedData = await relatedRes.json();
+          const related = (relatedData.data || relatedData);
           setRelatedProducts(
-            (Array.isArray(relatedData) ? relatedData : [])
+            (Array.isArray(related) ? related : [])
               .filter((p: Product) => p.id !== productId)
               .slice(0, 4)
           );

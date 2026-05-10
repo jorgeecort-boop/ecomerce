@@ -8,6 +8,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Products', href: '/dashboard/products' },
   { name: 'Orders', href: '/dashboard/orders' },
+  { name: 'Suppliers', href: '/dashboard/suppliers' },
   { name: 'Shopify', href: '/dashboard/shopify' },
   { name: 'Settings', href: '/dashboard/settings' },
 ];
@@ -31,9 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     key={item.name}
                     href={item.href}
                     className={`text-sm font-medium ${
-                      pathname === item.href
-                        ? 'text-blue-600'
-                        : 'text-gray-600 hover:text-gray-900'
+                      pathname === item.href ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     {item.name}
@@ -43,10 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">{user?.email}</span>
-              <button
-                onClick={logout}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
+              <button onClick={logout} className="text-sm text-gray-600 hover:text-gray-900">
                 Logout
               </button>
             </div>

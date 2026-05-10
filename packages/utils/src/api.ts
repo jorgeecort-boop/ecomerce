@@ -26,45 +26,46 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     throw new Error(error.message || `HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  return (json.data || json) as T;
 }
 
 export const api = {
   auth: {
     login: (email: string, password: string) =>
-      fetchApi<{ accessToken: string; user: any }>('/api/auth/login', {
+      fetchApi<{ accessToken: string; user: any }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
 
     register: (email: string, password: string, name?: string) =>
-      fetchApi<{ accessToken: string; user: any }>('/api/auth/register', {
+      fetchApi<{ accessToken: string; user: any }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, password, name }),
       }),
   },
 
   stores: {
-    getAll: (token: string) => fetchApi<any[]>('/api/stores', { token }),
+    getAll: (token: string) => fetchApi<any[]>('/stores', { token }),
 
-    getById: (token: string, id: string) => fetchApi<any>(`/api/stores/${id}`, { token }),
+    getById: (token: string, id: string) => fetchApi<any>(`/stores/${id}`, { token }),
 
     create: (token: string, data: { name: string; slug?: string; logoUrl?: string }) =>
-      fetchApi<any>('/api/stores', {
+      fetchApi<any>('/stores', {
         method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
 
     update: (token: string, id: string, data: Partial<any>) =>
-      fetchApi<any>(`/api/stores/${id}`, {
+      fetchApi<any>(`/stores/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
         token,
       }),
 
     delete: (token: string, id: string) =>
-      fetchApi<{ success: boolean }>(`/api/stores/${id}`, {
+      fetchApi<{ success: boolean }>(`/stores/${id}`, {
         method: 'DELETE',
         token,
       }),
@@ -72,38 +73,38 @@ export const api = {
 
   products: {
     getByStore: (token: string, storeId: string) =>
-      fetchApi<any[]>(`/api/products/store/${storeId}`, { token }),
+      fetchApi<any[]>(`/products/store/${storeId}`, { token }),
 
-    getById: (token: string, id: string) => fetchApi<any>(`/api/products/${id}`, { token }),
+    getById: (token: string, id: string) => fetchApi<any>(`/products/${id}`, { token }),
 
     create: (token: string, data: any) =>
-      fetchApi<any>('/api/products', {
+      fetchApi<any>('/products', {
         method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
 
     update: (token: string, id: string, data: Partial<any>) =>
-      fetchApi<any>(`/api/products/${id}`, {
+      fetchApi<any>(`/products/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
         token,
       }),
 
     delete: (token: string, id: string) =>
-      fetchApi<{ success: boolean }>(`/api/products/${id}`, {
+      fetchApi<{ success: boolean }>(`/products/${id}`, {
         method: 'DELETE',
         token,
       }),
 
     publish: (token: string, id: string) =>
-      fetchApi<any>(`/api/products/${id}/publish`, {
+      fetchApi<any>(`/products/${id}/publish`, {
         method: 'POST',
         token,
       }),
 
     unpublish: (token: string, id: string) =>
-      fetchApi<any>(`/api/products/${id}/unpublish`, {
+      fetchApi<any>(`/products/${id}/unpublish`, {
         method: 'POST',
         token,
       }),
@@ -111,15 +112,15 @@ export const api = {
 
   orders: {
     getByStore: (token: string, storeId: string) =>
-      fetchApi<any[]>(`/api/orders/store/${storeId}`, { token }),
+      fetchApi<any[]>(`/orders/store/${storeId}`, { token }),
 
-    getById: (token: string, id: string) => fetchApi<any>(`/api/orders/${id}`, { token }),
+    getById: (token: string, id: string) => fetchApi<any>(`/orders/${id}`, { token }),
 
     getStats: (token: string, storeId: string) =>
-      fetchApi<any>(`/api/orders/store/${storeId}/stats`, { token }),
+      fetchApi<any>(`/orders/store/${storeId}/stats`, { token }),
 
     updateStatus: (token: string, id: string, status: string) =>
-      fetchApi<any>(`/api/orders/${id}/status`, {
+      fetchApi<any>(`/orders/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
         token,
@@ -127,12 +128,12 @@ export const api = {
   },
 
   suppliers: {
-    getAll: (token: string) => fetchApi<any[]>('/api/suppliers', { token }),
+    getAll: (token: string) => fetchApi<any[]>('/suppliers', { token }),
 
-    getById: (token: string, id: string) => fetchApi<any>(`/api/suppliers/${id}`, { token }),
+    getById: (token: string, id: string) => fetchApi<any>(`/suppliers/${id}`, { token }),
 
     create: (token: string, data: any) =>
-      fetchApi<any>('/api/suppliers', {
+      fetchApi<any>('/suppliers', {
         method: 'POST',
         body: JSON.stringify(data),
         token,
@@ -142,11 +143,11 @@ export const api = {
       const params = new URLSearchParams({ query });
       if (page) params.append('page', String(page));
       if (limit) params.append('limit', String(limit));
-      return fetchApi<any>(`/api/suppliers/search/${code}?${params}`, { token });
+      return fetchApi<any>(`/suppliers/search/${code}?${params}`, { token });
     },
 
     sync: (token: string, id: string) =>
-      fetchApi<{ synced: number }>(`/api/suppliers/${id}/sync`, {
+      fetchApi<{ synced: number }>(`/suppliers/${id}/sync`, {
         method: 'POST',
         token,
       }),
@@ -158,7 +159,7 @@ export const api = {
       storeId: string,
       markup?: number
     ) =>
-      fetchApi<{ success: string[]; failed: string[] }>(`/api/suppliers/import/${code}`, {
+      fetchApi<{ success: string[]; failed: string[] }>(`/suppliers/import/${code}`, {
         method: 'POST',
         body: JSON.stringify({ externalIds, storeId, markup }),
         token,
@@ -178,15 +179,14 @@ export const api = {
         params.append('isImported', String(options.isImported));
       if (options?.page) params.append('page', String(options.page));
       if (options?.limit) params.append('limit', String(options.limit));
-      return fetchApi<{ products: any[]; total: number }>(`/api/trending?${params}`);
+      return fetchApi<{ products: any[]; total: number }>(`/trending?${params}`);
     },
 
-    getTop: (limit?: number) =>
-      fetchApi<any[]>(`/api/trending/top${limit ? `?limit=${limit}` : ''}`),
+    getTop: (limit?: number) => fetchApi<any[]>(`/trending/top${limit ? `?limit=${limit}` : ''}`),
 
     scrapeTikTok: (token: string, hashtags?: string[]) => {
       const params = hashtags?.length ? `?hashtags=${hashtags.join(',')}` : '';
-      return fetchApi<{ scraped: number }>(`/api/trending/scrape/tiktok${params}`, {
+      return fetchApi<{ scraped: number }>(`/trending/scrape/tiktok${params}`, {
         method: 'POST',
         token,
       });
@@ -194,7 +194,7 @@ export const api = {
 
     scrapeInstagram: (token: string, hashtags?: string[]) => {
       const params = hashtags?.length ? `?hashtags=${hashtags.join(',')}` : '';
-      return fetchApi<{ scraped: number }>(`/api/trending/scrape/instagram${params}`, {
+      return fetchApi<{ scraped: number }>(`/trending/scrape/instagram${params}`, {
         method: 'POST',
         token,
       });
@@ -205,7 +205,7 @@ export const api = {
     get: (storeId: string, sessionId?: string) => {
       const params = new URLSearchParams({ storeId });
       if (sessionId) params.append('sessionId', sessionId);
-      return fetchApi<any>(`/api/cart?${params}`);
+      return fetchApi<any>(`/cart?${params}`);
     },
 
     addItem: (
@@ -215,24 +215,24 @@ export const api = {
       variant?: any,
       sessionId?: string
     ) =>
-      fetchApi<any>(`/api/cart/items?storeId=${storeId}`, {
+      fetchApi<any>(`/cart/items?storeId=${storeId}`, {
         method: 'POST',
         body: JSON.stringify({ productId, quantity, variant, sessionId }),
       }),
 
     updateItem: (cartId: string, productId: string, quantity: number) =>
-      fetchApi<any>(`/api/cart/items/${productId}?cartId=${cartId}`, {
+      fetchApi<any>(`/cart/items/${productId}?cartId=${cartId}`, {
         method: 'PATCH',
         body: JSON.stringify({ quantity }),
       }),
 
     removeItem: (cartId: string, productId: string) =>
-      fetchApi<any>(`/api/cart/items/${productId}?cartId=${cartId}`, {
+      fetchApi<any>(`/cart/items/${productId}?cartId=${cartId}`, {
         method: 'DELETE',
       }),
 
     clear: (cartId: string) =>
-      fetchApi<any>(`/api/cart/${cartId}`, {
+      fetchApi<any>(`/cart/${cartId}`, {
         method: 'DELETE',
       }),
 
@@ -240,13 +240,13 @@ export const api = {
       cartId: string,
       data: { shippingAddress?: any; customerEmail?: string; customerPhone?: string }
     ) =>
-      fetchApi<{ orderId: string }>(`/api/cart/${cartId}/checkout`, {
+      fetchApi<{ orderId: string }>(`/cart/${cartId}/checkout`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
     merge: (token: string, sessionId: string) =>
-      fetchApi<any>('/api/cart/merge', {
+      fetchApi<any>('/cart/merge', {
         method: 'POST',
         body: JSON.stringify({ sessionId }),
         token,
@@ -254,9 +254,9 @@ export const api = {
   },
 
   dashboard: {
-    getStats: (token: string) => fetchApi<any>('/api/dashboard/stats', { token }),
+    getStats: (token: string) => fetchApi<any>('/dashboard/stats', { token }),
 
     getStoreStats: (token: string, storeId: string) =>
-      fetchApi<any>(`/api/dashboard/store/${storeId}/stats`, { token }),
+      fetchApi<any>(`/dashboard/store/${storeId}/stats`, { token }),
   },
 };

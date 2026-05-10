@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
@@ -11,11 +12,14 @@ async function bootstrap() {
     rawBody: true, // Required for Shopify webhook HMAC verification
   });
 
+  // Security headers
+  app.use(helmet());
+
   // Global prefix
   app.setGlobalPrefix('api');
 
   // CORS
-  const allowedOrigins = (process.env.WEB_URL || 'http://localhost:3000')
+  const allowedOrigins = (process.env.WEB_URL || 'http://localhost:3000,http://127.0.0.1:3000')
     .split(',')
     .map((o) => o.trim());
   app.enableCors({

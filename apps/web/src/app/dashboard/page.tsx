@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
-import { API_URL } from '@ecomerce/utils';
+import { api } from '@ecomerce/utils';
 
 interface DashboardStats {
   overview: {
@@ -35,11 +35,7 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch(`${API_URL}/dashboard/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Failed to load stats');
-        const data = await res.json();
+        const data = await api.dashboard.getStats(token!);
         setStats(data);
       } catch (err: any) {
         setError(err.message);
@@ -109,6 +105,11 @@ export default function DashboardPage() {
       href: '/dashboard/orders',
       label: 'Orders',
       icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+    },
+    {
+      href: '/dashboard/suppliers',
+      label: 'Suppliers',
+      icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9',
     },
     {
       href: '/dashboard/shopify',
