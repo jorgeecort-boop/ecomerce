@@ -59,19 +59,21 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
     }
     
     const storeData = await storeRes.json();
-    store = storeData;
+    const storeDataUnwrapped = storeData.data || storeData;
+    store = storeDataUnwrapped;
 
     // Products come embedded in the store response
-    if (storeData.products && Array.isArray(storeData.products)) {
-      products = storeData.products.filter((p: any) => p.isPublished);
+    if (storeDataUnwrapped.products && Array.isArray(storeDataUnwrapped.products)) {
+      products = storeDataUnwrapped.products.filter((p: any) => p.isPublished);
     } else {
       const productsRes = await fetch(
-        `${API_URL}/products/store/${storeData.id}/public?limit=50`,
+        `${API_URL}/products/store/${storeDataUnwrapped.id}/public?limit=50`,
         { signal: AbortSignal.timeout(8000) }
       );
       if (productsRes.ok) {
         const productsData = await productsRes.json();
-        products = Array.isArray(productsData) ? productsData : [];
+        const unwrapped = productsData.data || productsData;
+        products = Array.isArray(unwrapped) ? unwrapped : [];
       }
     }
   } catch (err: any) {
