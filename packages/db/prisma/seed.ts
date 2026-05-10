@@ -7,7 +7,8 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // ─── Admin User ───────────────────────────────────────────────
-  const hashedPassword = await bcrypt.hash('Admin123!', 10);
+const seedPassword = process.env.SEED_ADMIN_PASSWORD || (() => { throw new Error('SEED_ADMIN_PASSWORD env var required'); })();
+  const hashedPassword = await bcrypt.hash(seedPassword, 10);
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@ecomerce.com' },
@@ -135,7 +136,7 @@ async function main() {
 
   console.log('\n🎉 Seed completado!');
   console.log('   Email:    admin@ecomerce.com');
-  console.log('   Password: Admin123!');
+  console.log('   Password: (set via SEED_ADMIN_PASSWORD env var)');
   console.log('   Store:    /store/tienda-demo');
   console.log('   Coupon:   DEMO10 (10% off, min $50.000 COP)');
 }

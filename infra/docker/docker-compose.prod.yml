@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ecomerce
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecomerce_prod_secure}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ecomerce
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -23,13 +23,13 @@ services:
     image: redis:7-alpine
     container_name: ecomerce-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_prod_secure}
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
       - ecomerce-net
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_prod_secure}', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,8 +45,8 @@ services:
       - ../../.env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://ecomerce:${POSTGRES_PASSWORD:-ecomerce_prod_secure}@postgres:5432/ecomerce
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_prod_secure}@redis:6379
+      - DATABASE_URL=postgresql://ecomerce:${POSTGRES_PASSWORD}@postgres:5432/ecomerce
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - API_URL=https://ecomerce.viralreels.com
       - WEB_URL=https://ecomerce.viralreels.com
       - NEXT_PUBLIC_API_URL=https://ecomerce.viralreels.com/api

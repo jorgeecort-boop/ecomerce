@@ -6,7 +6,7 @@ services:
     container_name: ecomerce-postgres
     environment:
       POSTGRES_USER: ecomerce
-      POSTGRES_PASSWORD: ecomerce_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecomerce_dev}
       POSTGRES_DB: ecomerce
     ports:
       - '5432:5432'
@@ -36,7 +36,7 @@ services:
     container_name: ecomerce-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ecomerce
-      RABBITMQ_DEFAULT_PASS: ecomerce_dev
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-ecomerce_dev}
     ports:
       - '5672:5672'
       - '15672:15672'

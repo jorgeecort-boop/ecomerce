@@ -78,14 +78,20 @@ export class AuthService {
 
   private generateTokens(userId: string, email: string): TokenResponse {
     const payload = { sub: userId, email };
+    const jwtSecret = this.configService.get('JWT_SECRET');
+    const jwtRefreshSecret = this.configService.get('JWT_REFRESH_SECRET');
+
+    if (!jwtSecret || !jwtRefreshSecret) {
+      throw new Error('JWT_SECRET and JWT_REFRESH_SECRET are required');
+    }
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_SECRET') || 'default-secret-change-me',
+      secret: jwtSecret,
       expiresIn: this.configService.get('JWT_EXPIRES_IN') || '15m',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET') || 'refresh-secret-change-me',
+      secret: jwtRefreshSecret,
       expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d',
     });
 

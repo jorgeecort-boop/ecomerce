@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ecomerce
-      POSTGRES_PASSWORD: ecomerce_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecomerce_dev}
       POSTGRES_DB: ecomerce
     ports:
       - '5432:5432'
@@ -56,7 +56,7 @@ services:
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ecomerce
-      RABBITMQ_DEFAULT_PASS: ecomerce_dev
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-ecomerce_dev}
     ports:
       - '5672:5672'
       - '15672:15672'   # Management UI
@@ -80,9 +80,9 @@ services:
       - .env
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://ecomerce:ecomerce_dev@postgres:5432/ecomerce
-      REDIS_URL: redis://redis:6379
-      RABBITMQ_URL: amqp://ecomerce:ecomerce_dev@rabbitmq:5672
+      DATABASE_URL: postgresql://ecomerce:${POSTGRES_PASSWORD:-ecomerce_dev}@postgres:5432/ecomerce
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://ecomerce:${RABBITMQ_PASSWORD:-ecomerce_dev}@rabbitmq:5672}
     ports:
       - '3001:3001'
       - '9229:9229'   # Node.js debugger
