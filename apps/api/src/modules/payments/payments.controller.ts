@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Logger, BadRequestException, Req, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { MercadoPagoService } from './mercado-pago.service';
 import { PaymentsService } from './payments.service';
 import { OrdersService } from '../orders/orders.service';
@@ -77,6 +78,7 @@ export class PaymentsController {
   }
 
   @Post('webhook')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Handle MercadoPago payment notifications' })
   async handleWebhook(
     @Body() body: any,

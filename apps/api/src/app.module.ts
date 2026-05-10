@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
@@ -21,6 +22,7 @@ import { TelegramModule } from './common/telegram.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { TestSeedModule } from './modules/test-seed/test-seed.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -63,7 +65,14 @@ import { TestSeedModule } from './modules/test-seed/test-seed.module';
     TelegramBotModule,
     CouponsModule,
     TestSeedModule,
+    WebhooksModule,
   ],
   controllers: [HealthController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

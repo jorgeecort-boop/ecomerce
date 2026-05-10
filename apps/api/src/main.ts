@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
@@ -10,6 +11,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Required for Shopify webhook HMAC verification
   });
+
+  // Security headers
+  app.use(helmet());
 
   // Global prefix
   app.setGlobalPrefix('api');
