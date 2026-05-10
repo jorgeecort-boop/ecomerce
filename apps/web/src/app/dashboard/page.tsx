@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
-import { API_URL } from '@ecomerce/utils';
+import { api } from '@ecomerce/utils';
 
 interface DashboardStats {
   overview: {
@@ -35,11 +35,7 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch(`${API_URL}/dashboard/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Failed to load stats');
-        const data = await res.json();
+        const data = await api.dashboard.getStats(token!);
         setStats(data);
       } catch (err: any) {
         setError(err.message);
