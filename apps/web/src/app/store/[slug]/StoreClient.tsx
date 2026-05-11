@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useCart } from '@/hooks/useCart';
 
@@ -251,10 +252,13 @@ export default function StoreClient({ store, products }: StoreClientProps) {
                   <Link href={`/store/${store.slug}/${product.id}`}>
                     <div className="aspect-square bg-gradient-to-br from-blue-900/20 to-black overflow-hidden relative">
                       {getFirstImage(product) ? (
-                        <img
-                          src={getFirstImage(product)}
+                        <Image
+                          src={getFirstImage(product)!}
                           alt={product.title}
+                          width={400}
+                          height={400}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          unoptimized
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-5xl">
@@ -439,7 +443,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
                     <div key={item.id} className="flex gap-3 items-start">
                       <div className="w-16 h-16 rounded-xl bg-blue-500/10 border border-blue-500/10 overflow-hidden flex-shrink-0">
                         {getFirstImage(item) ? (
-                          <img src={getFirstImage(item)} alt={item.title} className="w-full h-full object-cover" />
+                          <Image src={getFirstImage(item)!} alt={item.title} width={64} height={64} className="w-full h-full object-cover" unoptimized />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xl">⚡</div>
                         )}

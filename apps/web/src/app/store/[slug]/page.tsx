@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import Script from 'next/script';
 import StoreClient from './StoreClient';
 import { API_URL } from '@ecomerce/utils';
+
+export const revalidate = 60; // ISR: regenerar cada minuto
 
 interface Product {
   id: string;
@@ -83,11 +86,41 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
 
   // Pass initial data to client component for interactivity
   // At this point, store is guaranteed to be non-null because notFound() would have been called
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    name: store!.name,
+    description: store!.description || `${store!.name} - Tech Gadgets Store`,
+    url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/store/${store!.slug}`,
+    ...(store!.logoUrl ? { logo: store!.logoUrl } : {}),
+    ...(products.length > 0 ? {
+      makesOffer: products.map((p) => ({
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'Product',
+          name: p.title,
+          description: p.description || '',
+          ...(p.imageUrl || (p.images?.[0]) ? { image: p.imageUrl || (Array.isArray(p.images) ? p.images[0] : '') } : {}),
+        },
+        price: Number(p.price),
+        priceCurrency: 'COP',
+        availability: (p.inventory ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      })),
+    } : {}),
+  };
+
   return (
-    <StoreClient 
-      store={store!}
-      products={products}
-    />
+    <>
+      <Script
+        id="store-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <StoreClient
+        store={store!}
+        products={products}
+      />
+    </>
   );
 }
 
@@ -107,14 +140,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       };
     }
     
-    const store = await storeRes.json();
+    const storeRaw = await storeRes.json();
+    const store = storeRaw.data || storeRaw;
+    
+    const storeName = store.name || 'Store';
+    const storeDesc = store.description || `Discover innovative tech gadgets at ${storeName}`;
     
     return {
-      title: `${store.name} - E-Commerce Store`,
-      description: store.description || `Shop at ${store.name} - Quality products at great prices`,
+      title: `${storeName} - Tech Gadgets`,
+      description: storeDesc,
       openGraph: {
-        title: `${store.name} - E-Commerce Store`,
-        description: store.description || `Shop at ${store.name}`,
+        title: `${storeName} - Tech Gadgets`,
+        description: storeDesc,
+        type: 'website',
+        url: `/store/${store.slug || slug}`,
+        siteName: 'Sarhbits',
+        images: store.logoUrl ? [{ url: store.logoUrl, width: 256, height: 256 }] : [],
+        locale: 'es_CO',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${storeName} - Tech Gadgets`,
+        description: storeDesc,
         images: store.logoUrl ? [store.logoUrl] : [],
       },
     };
