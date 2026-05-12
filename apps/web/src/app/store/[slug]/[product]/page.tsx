@@ -2,6 +2,8 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import Script from 'next/script';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useCart } from '@/hooks/useCart';
 import { ProductReviews } from '@/components/features/reviews/ProductReviews';
@@ -61,6 +63,17 @@ export default function ProductPage({
         const productData = await productRes.json();
         const product = (productData.data || productData) as Product;
         setProduct(product);
+
+        // Update page metadata
+        document.title = `${product.title} - ${store.name || 'Sarhbits'}`;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', product.description?.slice(0, 160) || product.title);
+        else {
+          const meta = document.createElement('meta');
+          meta.name = 'description';
+          meta.content = product.description?.slice(0, 160) || product.title;
+          document.head.appendChild(meta);
+        }
 
         // Load related products from same store
         const relatedRes = await fetch(`${API_URL}/products/store/${store.id}/public?limit=4`);
@@ -133,6 +146,34 @@ export default function ProductPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* JSON-LD Structured Data */}
+      {product && (
+        <Script
+          id="product-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Product',
+              name: product.title,
+              description: product.description || product.title,
+              image: allImages[0] || undefined,
+              category: product.category || 'Electronics',
+              ...(product.tags?.length ? { keywords: product.tags.join(', ') } : {}),
+              offers: {
+                '@type': 'Offer',
+                price: Number(product.price),
+                priceCurrency: 'COP',
+                availability: (product.inventory ?? 0) > 0
+                  ? 'https://schema.org/InStock'
+                  : 'https://schema.org/OutOfStock',
+                url: `${typeof window !== 'undefined' ? window.location.origin : ''}/store/${slug}/${product.id}`,
+              },
+            }),
+          }}
+        />
+      )}
+
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -172,10 +213,14 @@ export default function ProductPage({
             {/* Main Image */}
             <div className="aspect-square bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm mb-3">
               {allImages.length > 0 ? (
-                <img
+                <Image
                   src={allImages[selectedImage] ?? allImages[0]}
                   alt={product.title}
+                  width={600}
+                  height={600}
                   className="w-full h-full object-contain p-4"
+                  priority
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-6xl text-gray-300 dark:text-gray-600">
@@ -197,7 +242,7 @@ export default function ProductPage({
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-400'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <Image src={img} alt="" width={64} height={64} className="w-full h-full object-cover" unoptimized />
                   </button>
                 ))}
               </div>
@@ -361,10 +406,13 @@ export default function ProductPage({
                 >
                   <div className="aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden">
                     {rp.imageUrl ? (
-                      <img
+                      <Image
                         src={rp.imageUrl}
                         alt={rp.title}
+                        width={200}
+                        height={200}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        unoptimized
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">
