@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import Script from 'next/script';
 import ProductClient from './ProductClient';
 import { API_URL } from '@ecomerce/utils';
 
@@ -169,10 +168,12 @@ export default async function ProductPage({
     };
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <Script
+      <>
+        {/* eslint-disable-next-line @next/next/no-before-interactive-script-component */}
+        <script
           id="product-jsonld"
           type="application/ld+json"
+          // biome-ignore lint: needed for JSON-LD SSR
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <ProductClient
@@ -181,20 +182,21 @@ export default async function ProductPage({
           relatedProducts={relatedProducts}
           slug={slug}
         />
-      </div>
+      </>
     );
   } catch (err) {
     if (err instanceof ApiUnavailableError) {
-      // API dormido (503/timeout) — página de error amigable con auto-refresh
+      // API dormido (503/timeout) — página de error amigable con auto-refresh via JS
       return (
         <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+          {/* Auto-refresh cada 8s usando JS, no meta tag (meta en div es HTML inválido) */}
+          <script dangerouslySetInnerHTML={{ __html: 'setTimeout(function(){window.location.reload()},8000)' }} />
           <div className="text-center max-w-md">
             <p className="text-5xl mb-4">⏳</p>
             <h1 className="text-2xl font-bold text-white mb-2">Cargando tienda...</h1>
             <p className="text-gray-400 mb-6 text-sm">
               El servidor está iniciando. La página se recargará automáticamente en unos segundos.
             </p>
-            <meta httpEquiv="refresh" content="8" />
             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
           </div>
         </div>
