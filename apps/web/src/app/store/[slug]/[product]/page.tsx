@@ -81,9 +81,9 @@ async function fetchRelatedProducts(storeId: string, excludeId: string): Promise
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string; product: string }>;
+  params: { slug: string; product: string };
 }) {
-  const { slug, product: productId } = await params;
+  const { slug, product: productId } = params;
 
   try {
     const store = await fetchStore(slug);
@@ -136,9 +136,9 @@ export async function generateMetadata({
 export default async function ProductPage({
   params,
 }: {
-  params: Promise<{ slug: string; product: string }>;
+  params: { slug: string; product: string };
 }) {
-  const { slug, product: productId } = await params;
+  const { slug, product: productId } = params;
 
   try {
     const store = await fetchStore(slug);
