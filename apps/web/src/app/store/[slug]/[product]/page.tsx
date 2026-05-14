@@ -169,11 +169,9 @@ export default async function ProductPage({
 
     return (
       <>
-        {/* eslint-disable-next-line @next/next/no-before-interactive-script-component */}
         <script
           id="product-jsonld"
           type="application/ld+json"
-          // biome-ignore lint: needed for JSON-LD SSR
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <ProductClient
