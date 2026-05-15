@@ -57,9 +57,9 @@ export async function generateMetadata({
 export default async function ProductPage({
   params,
 }: {
-  params: { slug: string; product: string };
+  params: Promise<{ slug: string; product: string }>;
 }) {
-  const { slug, product: productId } = params;
+  const { slug, product: productId } = await params;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
 
   const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
