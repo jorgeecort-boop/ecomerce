@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -45,7 +45,12 @@ export default function ProductClient({
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { format } = useCurrency();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { addItem } = useCart(slug);
 
@@ -158,7 +163,7 @@ export default function ProductClient({
             {/* Price */}
             <div className="mb-6">
               <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                {format(Number(product.price))}
+                {mounted ? format(Number(product.price)) : `$${Number(product.price).toFixed(2)}`}
               </p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
                 <span>✓</span> Free shipping on orders over $50
@@ -228,7 +233,7 @@ export default function ProductClient({
               >
                 {addedToCart
                   ? '✓ Added to Cart!'
-                  : `Add to Cart — ${format(Number(product.price) * quantity)}`}
+                  : `Add to Cart — ${mounted ? format(Number(product.price) * quantity) : `$${(Number(product.price) * quantity).toFixed(2)}`}`}
               </button>
             </div>
 
@@ -313,7 +318,7 @@ export default function ProductClient({
                       {rp.title}
                     </p>
                     <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                      {format(Number(rp.price))}
+                      {mounted ? format(Number(rp.price)) : `$${Number(rp.price).toFixed(2)}`}
                     </p>
                   </div>
                 </Link>
