@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
 import ProductClient from './ProductClient';
+import { generateProductMetadata } from './seo';
 import { API_URL } from '@ecomerce/utils';
 
 export const revalidate = 60;
@@ -33,25 +34,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string; product: string }>;
 }) {
-  const { slug, product: productId } = await params;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
-
-  return {
-    title: 'Product',
-    description: 'Product details',
-    openGraph: {
-      title: 'Product',
-      description: 'Product details',
-      type: 'product' as const,
-      url: `${baseUrl}/store/${slug}/${productId}`,
-      locale: 'es_CO',
-    },
-    twitter: {
-      card: 'summary_large_image' as const,
-      title: 'Product',
-      description: 'Product details',
-    },
-  };
+  return generateProductMetadata(await params);
 }
 
 export default async function ProductPage({
