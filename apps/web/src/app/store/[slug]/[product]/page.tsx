@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Script from 'next/script';
 import ProductClient from './ProductClient';
 import { API_URL } from '@ecomerce/utils';
 
@@ -169,7 +170,7 @@ export default async function ProductPage({
 
     return (
       <>
-        <script
+        <Script
           id="product-jsonld"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
