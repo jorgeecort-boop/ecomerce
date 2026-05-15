@@ -28,54 +28,17 @@ interface Store {
   description?: string;
 }
 
-class ApiUnavailableError extends Error {}
-
-async function fetchStore(slug: string): Promise<Store> {
-  let res: Response;
+async function fetchWithTimeout(url: string, timeout = 8000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
   try {
-    res = await fetch(`${API_URL}/stores/slug/${slug}`, {
-      signal: AbortSignal.timeout(8000),
+    const res = await fetch(url, {
+      signal: controller.signal,
       next: { revalidate: 60 },
     });
-  } catch {
-    throw new ApiUnavailableError('API timeout');
-  }
-  if (res.status === 404) notFound();
-  if (!res.ok) throw new ApiUnavailableError(`API error ${res.status}`);
-  const data = await res.json();
-  return data.data || data;
-}
-
-async function fetchProduct(productId: string): Promise<Product> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/products/${productId}`, {
-      signal: AbortSignal.timeout(8000),
-      next: { revalidate: 60 },
-    });
-  } catch {
-    throw new ApiUnavailableError('API timeout');
-  }
-  if (res.status === 404) notFound();
-  if (!res.ok) throw new ApiUnavailableError(`API error ${res.status}`);
-  const data = await res.json();
-  return data.data || data;
-}
-
-async function fetchRelatedProducts(storeId: string, excludeId: string): Promise<Product[]> {
-  try {
-    const res = await fetch(`${API_URL}/products/store/${storeId}/public?limit=4`, {
-      signal: AbortSignal.timeout(8000),
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const raw = data.data || data;
-    return (Array.isArray(raw) ? raw : [])
-      .filter((p: Product) => p.id !== excludeId)
-      .slice(0, 4);
-  } catch {
-    return [];
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -85,16 +48,22 @@ export async function generateMetadata({
   params: { slug: string; product: string };
 }) {
   const { slug, product: productId } = params;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
 
   try {
-    const store = await fetchStore(slug);
-    const product = await fetchProduct(productId);
+    const storeRes = await fetchWithTimeout(`${API_URL}/stores/slug/${slug}`);
+    if (!storeRes.ok) return { title: 'Product' };
+    const storeRaw = await storeRes.json();
+    const store = storeRaw.data || storeRaw;
+
+    const productRes = await fetchWithTimeout(`${API_URL}/products/${productId}`);
+    if (!productRes.ok) return { title: 'Product' };
+    const productRaw = await productRes.json();
+    const product = productRaw.data || productRaw;
 
     const title = `${product.title} - ${store.name}`;
     const description = product.description?.slice(0, 160) || product.title;
     const imageUrl = product.imageUrl || product.images?.[0];
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
-    const productUrl = `${baseUrl}/store/${slug}/${productId}`;
 
     return {
       title,
@@ -103,20 +72,9 @@ export async function generateMetadata({
         title,
         description,
         type: 'product' as const,
-        url: productUrl,
+        url: `${baseUrl}/store/${slug}/${productId}`,
         siteName: store.name,
-        ...(imageUrl
-          ? {
-              images: [
-                {
-                  url: imageUrl,
-                  width: 600,
-                  height: 600,
-                  alt: product.title,
-                },
-              ],
-            }
-          : {}),
+        ...(imageUrl ? { images: [{ url: imageUrl, width: 600, height: 600, alt: product.title }] } : {}),
         locale: 'es_CO',
       },
       twitter: {
@@ -127,10 +85,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return {
-      title: 'Product Not Found',
-      description: 'The requested product could not be found.',
-    };
+    return { title: 'Product' };
   }
 }
 
@@ -140,67 +95,55 @@ export default async function ProductPage({
   params: { slug: string; product: string };
 }) {
   const { slug, product: productId } = params;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
 
+  const storeRes = await fetchWithTimeout(`${API_URL}/stores/slug/${slug}`);
+  if (!storeRes.ok) notFound();
+  const storeRaw = await storeRes.json();
+  const store = storeRaw.data || storeRaw;
+
+  const productRes = await fetchWithTimeout(`${API_URL}/products/${productId}`);
+  if (!productRes.ok) notFound();
+  const productRaw = await productRes.json();
+  const product = productRaw.data || productRaw;
+
+  let relatedProducts: Product[] = [];
   try {
-    const store = await fetchStore(slug);
-    const product = await fetchProduct(productId);
-    const relatedProducts = await fetchRelatedProducts(store.id, productId);
-
-    const allImages = ([product.imageUrl, ...(product.images ?? [])].filter(Boolean)) as string[];
-
-    const jsonLd = {
-      '@context': 'https://schema.org',
-      '@type': 'Product',
-      name: product.title,
-      description: product.description || product.title,
-      ...(allImages[0] ? { image: allImages[0] } : {}),
-      ...(product.category ? { category: product.category } : {}),
-      ...(product.tags?.length ? { keywords: product.tags.join(', ') } : {}),
-      offers: {
-        '@type': 'Offer',
-        price: Number(product.price),
-        priceCurrency: 'COP',
-        availability:
-          (product.inventory ?? 0) > 0
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
-        url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/store/${slug}/${product.id}`,
-      },
-    };
-
-    return (
-      <>
-        <Script
-          id="product-jsonld"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        <ProductClient
-          product={product}
-          store={store}
-          relatedProducts={relatedProducts}
-          slug={slug}
-        />
-      </>
-    );
-  } catch (err) {
-    if (err instanceof ApiUnavailableError) {
-      // API dormido (503/timeout) — página de error amigable con auto-refresh via JS
-      return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-          {/* Auto-refresh cada 8s usando JS, no meta tag (meta en div es HTML inválido) */}
-          <script dangerouslySetInnerHTML={{ __html: 'setTimeout(function(){window.location.reload()},8000)' }} />
-          <div className="text-center max-w-md">
-            <p className="text-5xl mb-4">⏳</p>
-            <h1 className="text-2xl font-bold text-white mb-2">Cargando tienda...</h1>
-            <p className="text-gray-400 mb-6 text-sm">
-              El servidor está iniciando. La página se recargará automáticamente en unos segundos.
-            </p>
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          </div>
-        </div>
-      );
+    const relatedRes = await fetchWithTimeout(`${API_URL}/products/store/${store.id}/public?limit=4`);
+    if (relatedRes.ok) {
+      const relatedRaw = await relatedRes.json();
+      const raw = relatedRaw.data || relatedRaw;
+      relatedProducts = (Array.isArray(raw) ? raw : [])
+        .filter((p: Product) => p.id !== productId)
+        .slice(0, 4);
     }
-    throw err; // otros errores → Next.js error boundary
+  } catch {
+    relatedProducts = [];
   }
+
+  const allImages = ([product.imageUrl, ...(product.images ?? [])].filter(Boolean)) as string[];
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || product.title,
+    ...(allImages[0] ? { image: allImages[0] } : {}),
+    ...(product.category ? { category: product.category } : {}),
+    ...(product.tags?.length ? { keywords: product.tags.join(', ') } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: Number(product.price),
+      priceCurrency: 'COP',
+      availability: (product.inventory ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `${baseUrl}/store/${slug}/${product.id}`,
+    },
+  };
+
+  return (
+    <>
+      <Script id="product-jsonld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ProductClient product={product} store={store} relatedProducts={relatedProducts} slug={slug} />
+    </>
+  );
 }
