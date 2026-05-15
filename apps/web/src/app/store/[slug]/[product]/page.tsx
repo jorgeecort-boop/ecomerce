@@ -28,67 +28,6 @@ interface Store {
   description?: string;
 }
 
-async function fetchWithTimeout(url: string, timeout = 8000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      next: { revalidate: 60 },
-    });
-    return res;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string; product: string };
-}) {
-  const { slug, product: productId } = params;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
-
-  try {
-    const storeRes = await fetchWithTimeout(`${API_URL}/stores/slug/${slug}`);
-    if (!storeRes.ok) return { title: 'Product' };
-    const storeRaw = await storeRes.json();
-    const store = storeRaw.data || storeRaw;
-
-    const productRes = await fetchWithTimeout(`${API_URL}/products/${productId}`);
-    if (!productRes.ok) return { title: 'Product' };
-    const productRaw = await productRes.json();
-    const product = productRaw.data || productRaw;
-
-    const title = `${product.title} - ${store.name}`;
-    const description = product.description?.slice(0, 160) || product.title;
-    const imageUrl = product.imageUrl || product.images?.[0];
-
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        type: 'product' as const,
-        url: `${baseUrl}/store/${slug}/${productId}`,
-        siteName: store.name,
-        ...(imageUrl ? { images: [{ url: imageUrl, width: 600, height: 600, alt: product.title }] } : {}),
-        locale: 'es_CO',
-      },
-      twitter: {
-        card: 'summary_large_image' as const,
-        title,
-        description,
-        ...(imageUrl ? { images: [imageUrl] } : {}),
-      },
-    };
-  } catch {
-    return { title: 'Product' };
-  }
-}
-
 export default async function ProductPage({
   params,
 }: {
@@ -97,19 +36,25 @@ export default async function ProductPage({
   const { slug, product: productId } = params;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
 
-  const storeRes = await fetchWithTimeout(`${API_URL}/stores/slug/${slug}`);
+  const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
+    next: { revalidate: 60 },
+  });
   if (!storeRes.ok) notFound();
   const storeRaw = await storeRes.json();
-  const store = storeRaw.data || storeRaw;
+  const store: Store = storeRaw.data || storeRaw;
 
-  const productRes = await fetchWithTimeout(`${API_URL}/products/${productId}`);
+  const productRes = await fetch(`${API_URL}/products/${productId}`, {
+    next: { revalidate: 60 },
+  });
   if (!productRes.ok) notFound();
   const productRaw = await productRes.json();
-  const product = productRaw.data || productRaw;
+  const product: Product = productRaw.data || productRaw;
 
   let relatedProducts: Product[] = [];
   try {
-    const relatedRes = await fetchWithTimeout(`${API_URL}/products/store/${store.id}/public?limit=4`);
+    const relatedRes = await fetch(`${API_URL}/products/store/${store.id}/public?limit=4`, {
+      next: { revalidate: 60 },
+    });
     if (relatedRes.ok) {
       const relatedRaw = await relatedRes.json();
       const raw = relatedRaw.data || relatedRaw;
