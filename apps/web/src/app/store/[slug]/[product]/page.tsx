@@ -28,6 +28,53 @@ interface Store {
   description?: string;
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string; product: string }>;
+}) {
+  const { slug, product: productId } = await params;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
+
+  try {
+    const productRes = await fetch(`${API_URL}/products/${productId}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!productRes.ok) {
+      return { title: 'Product' };
+    }
+
+    const productRaw = await productRes.json();
+    const product = productRaw.data || productRaw;
+
+    const title = product.title || 'Product';
+    const description = product.description?.slice(0, 160) || title;
+    const imageUrl = product.imageUrl || product.images?.[0];
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'product' as const,
+        url: `${baseUrl}/store/${slug}/${productId}`,
+        ...(imageUrl ? { images: [{ url: imageUrl, width: 600, height: 600, alt: title }] } : {}),
+        locale: 'es_CO',
+      },
+      twitter: {
+        card: 'summary_large_image' as const,
+        title,
+        description,
+        ...(imageUrl ? { images: [imageUrl] } : {}),
+      },
+    };
+  } catch {
+    return { title: 'Product' };
+  }
+}
+
 export default async function ProductPage({
   params,
 }: {
