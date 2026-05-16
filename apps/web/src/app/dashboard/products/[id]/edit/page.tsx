@@ -14,7 +14,10 @@ interface Product {
   costPrice: number;
   inventory: number;
   isPublished: boolean;
+  isFeatured?: boolean;
   imageUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   storeId: string;
 }
 
@@ -63,6 +66,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           costPrice: Number(form.costPrice),
           inventory: Number(form.inventory),
           storeId: form.storeId,
+          seoTitle: form.seoTitle || undefined,
+          seoDescription: form.seoDescription || undefined,
+          isFeatured: form.isFeatured,
         }),
       });
 
@@ -208,6 +214,70 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               % — Profit per sale: ${(Number(form.price) - Number(form.costPrice)).toFixed(2)}
             </div>
           )}
+
+          {/* Image preview */}
+          {form.imageUrl && (
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview:</p>
+              <img
+                src={form.imageUrl}
+                alt="Preview"
+                className="w-32 h-32 object-cover rounded-lg border dark:border-gray-600"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+            </div>
+          )}
+
+          {/* Featured toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, isFeatured: !form.isFeatured })}
+              className={`relative w-11 h-6 rounded-full transition-colors ${form.isFeatured ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${form.isFeatured ? 'translate-x-5' : ''}`} />
+            </button>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Featured Product
+            </label>
+          </div>
+
+          {/* SEO Section */}
+          <div className="pt-4 border-t dark:border-gray-700">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+              🔍 SEO Settings
+            </h4>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  SEO Title <span className="text-gray-400">(defaults to product title)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.seoTitle ?? ''}
+                  onChange={(e) => setForm({ ...form, seoTitle: e.target.value })}
+                  placeholder={form.title || 'Product title for search engines'}
+                  maxLength={60}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">{(form.seoTitle?.length || 0) || (form.title?.length || 0)}/60</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  SEO Description <span className="text-gray-400">(defaults to product description)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.seoDescription ?? ''}
+                  onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
+                  placeholder={form.description || 'Product description for search engines'}
+                  maxLength={160}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">{(form.seoDescription?.length || 0) || (form.description?.length || 0)}/160</p>
+              </div>
+            </div>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button
