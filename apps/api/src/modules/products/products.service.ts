@@ -9,6 +9,7 @@ export interface HomeProductCard {
   name: string;
   imageUrl: string;
   price: number;
+  compareAtPrice?: number;
   slug: string;
 }
 
@@ -92,6 +93,7 @@ export class ProductsService {
         title: true,
         images: true,
         price: true,
+        compareAtPrice: true,
         store: { select: { slug: true } },
       },
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
@@ -104,6 +106,7 @@ export class ProductsService {
         name: product.title,
         imageUrl: firstImage || '/placeholder-product.svg',
         price: Number(product.price),
+        compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : undefined,
         slug: `${product.store.slug}/${product.id}`,
       };
     });

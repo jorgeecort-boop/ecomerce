@@ -5,6 +5,7 @@ export interface HomeCategoryCard {
   name: string;
   imageUrl: string;
   price: number;
+  compareAtPrice?: number;
   slug: string;
 }
 

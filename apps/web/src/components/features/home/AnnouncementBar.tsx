@@ -1,28 +1,20 @@
+'use client';
+
 import Link from 'next/link';
 
-export interface AnnouncementBarProps {
-  prefixText?: string;
-  linkText?: string;
-  linkHref?: string;
-}
-
-export function AnnouncementBar({
-  prefixText = 'Envio gratis a partir de $69',
-  linkText = 'Descubre nuestras nuevas Capsulas Premium.',
-  linkHref = '#',
-}: AnnouncementBarProps) {
+export function AnnouncementBar() {
   return (
-    <div className="bg-primary px-4 py-2 text-center text-xs font-medium tracking-[0.02em] text-white sm:text-sm">
-      <div className="mx-auto flex max-w-site items-center justify-center gap-2">
-        <span>{prefixText} ·</span>
-        <span>
-          <Link
-            href={linkHref}
-            className="underline underline-offset-2 hover:opacity-90"
-          >
-            {linkText}
-          </Link>
-        </span>
+    <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 py-2.5 text-center text-sm font-medium text-white">
+      {/* Animated shimmer */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+
+      <div className="relative mx-auto max-w-site px-4 flex items-center justify-center gap-2">
+        <span className="animate-pulse">🔥</span>
+        <span>Ofertas de temporada: hasta <strong>-40% OFF</strong></span>
+        <span className="hidden sm:inline mx-2 opacity-50">|</span>
+        <Link href="/store/tienda-demo" className="underline underline-offset-2 hover:opacity-80 transition-opacity">
+          Comprar ahora →
+        </Link>
       </div>
     </div>
   );
