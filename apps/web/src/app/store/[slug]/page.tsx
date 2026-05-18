@@ -60,44 +60,46 @@ async function fetchStoreData(slug: string): Promise<{ store: Store | null; prod
   }
 }
 
-export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function StorePage({ params }: { params: { slug: string } }) {
+  const slug = params.slug;
   const { store, products, error } = await fetchStoreData(slug);
 
-  if (error && !store) {
+  if (!store) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#03045E' }}>
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6 animate-pulse">🚀</div>
-          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">
+          <h1 className="text-2xl font-extrabold text-white mb-3">
             La tienda se esta despertando
           </h1>
-          <p className="text-slate-500 mb-6">
+          <p className="text-[rgba(255,255,255,0.5)] mb-6">
             Nuestros servidores estan en modo ahorro de energia. Vuelve a intentarlo en unos segundos.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors"
+            <a
+              href={`/store/${slug}`}
+              className="px-6 py-3 rounded-full gradient-hero-cta text-white font-bold hover:shadow-lg transition-colors"
             >
               Reintentar
-            </button>
+            </a>
             <Link
               href="/"
-              className="px-6 py-3 rounded-full border-2 border-slate-200 text-slate-600 font-semibold hover:border-slate-300 transition-colors"
+              className="px-6 py-3 rounded-full border border-[rgba(255,255,255,0.2)] text-white font-semibold hover:bg-[rgba(255,255,255,0.08)] transition-colors"
             >
               Volver al inicio
             </Link>
           </div>
-          <p className="text-xs text-slate-400 mt-6">
-            Error: {error}
-          </p>
+          {error && (
+            <p className="text-xs text-[rgba(255,255,255,0.3)] mt-6">
+              Error: {error}
+            </p>
+          )}
         </div>
       </div>
     );
   }
 
-  const jsonLd = store ? {
+  const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Store',
     name: store.name,
@@ -118,24 +120,22 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         availability: (p.inventory ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       })),
     } : {}),
-  } : null;
+  };
 
   return (
     <>
-      {jsonLd && (
-        <Script
-          id="store-jsonld"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      )}
-      <StoreClient store={store!} products={products} />
+      <Script
+        id="store-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <StoreClient store={store} products={products} />
     </>
   );
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const slug = params.slug;
 
   try {
     const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {

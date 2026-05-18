@@ -32,17 +32,17 @@ interface Store {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string; product: string }>;
+  params: { slug: string; product: string };
 }) {
-  return generateProductMetadata(await params);
+  return generateProductMetadata(params);
 }
 
 export default async function ProductPage({
   params,
 }: {
-  params: Promise<{ slug: string; product: string }>;
+  params: { slug: string; product: string };
 }) {
-  const { slug, product: productId } = await params;
+  const { slug, product: productId } = params;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
 
   let store: Store | null = null;
