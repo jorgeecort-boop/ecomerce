@@ -4,30 +4,38 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --navy: #03045E;
-  --aurora-blue: #00B4D8;
-  --cyan-glow: #90E0EF;
-  --ice-blue: #CAF0F8;
-  --teal: #0077B6;
-  --lime-pop: #E4FF1A;
-  --warm-peach: #FF9B85;
-  --aurora-pink: #FF006E;
-  --white: #FFFFFF;
-  --muted-white: rgba(255, 255, 255, 0.55);
-  --faint-white: rgba(255, 255, 255, 0.12);
-  --radius: 0.625rem;
-}
+@layer base {
+  :root {
+    --navy: #03045E;
+    --aurora-blue: #00B4D8;
+    --cyan-glow: #90E0EF;
+    --ice-blue: #CAF0F8;
+    --teal: #0077B6;
+    --lime-pop: #E4FF1A;
+    --warm-peach: #FF9B85;
+    --aurora-pink: #FF006E;
+    --white: #FFFFFF;
+    --muted-white: rgba(255, 255, 255, 0.55);
+    --faint-white: rgba(255, 255, 255, 0.12);
+    --radius: 0.625rem;
+  }
 
-html {
-  scroll-behavior: auto;
-}
+  * {
+    @apply border-border;
+  }
 
-body {
-  font-family: 'Inter', sans-serif;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--navy);
+    color: var(--white);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 @layer utilities {
@@ -61,9 +69,10 @@ body {
     background-clip: text;
   }
 
-  .text-balance {
-    text-wrap: balance;
-  }
+  .bg-navy { background-color: var(--navy); }
+  .bg-navy-95 { background-color: rgba(3, 4, 94, 0.95); }
+  .text-muted-white { color: var(--muted-white); }
+  .border-faint { border-color: var(--faint-white); }
 }
 
 /* Pulse glow animation for logo dot */
