@@ -11,26 +11,22 @@ interface StoreHeroProps {
 
 export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const logoSideRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
 
-    tl.fromTo(
-      videoRef.current,
-      { opacity: 0, scale: 1.05 },
-      { opacity: 1, scale: 1, duration: 1.8 }
-    )
-      .fromTo(badgeRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.4)
-      .fromTo(titleRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0 }, 0.6)
-      .fromTo(subtitleRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.8)
-      .fromTo(statsRef.current?.children || [], { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1 }, 1.0)
-      .fromTo(ctaRef.current, { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, 1.2);
+    tl.fromTo(logoSideRef.current, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 1.5 }, 0)
+      .fromTo(badgeRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.3)
+      .fromTo(titleRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.0 }, 0.5)
+      .fromTo(subtitleRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.7)
+      .fromTo(statsRef.current?.children || [], { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1 }, 0.9)
+      .fromTo(ctaRef.current, { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7 }, 1.1);
 
     return () => { tl.kill(); };
   }, []);
@@ -61,18 +57,13 @@ export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
             <span className="text-[#E4FF1A] text-sm font-medium">Tienda Oficial</span>
           </div>
 
-          {/* Store Logo/Name */}
-          <div ref={titleRef} className="mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="relative">
-                <span className="text-white text-5xl max-[768px]:text-4xl font-bold tracking-[-2px]">SarahBits</span>
-                <span className="logo-dot absolute -right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#00B4D8] rounded-full" />
-              </span>
-            </div>
-            <h1 className="text-white text-[56px] max-[768px]:text-[36px] font-medium leading-[1.1] tracking-[-1.68px]">
-              {storeName}
-            </h1>
-          </div>
+          {/* Title */}
+          <h1
+            ref={titleRef}
+            className="text-white text-4xl md:text-5xl font-medium tracking-[-1.5px] leading-tight"
+          >
+            {storeName}
+          </h1>
 
           {/* Subtitle */}
           <p
@@ -130,47 +121,58 @@ export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
         </div>
       </div>
 
-      {/* Right Video Zone */}
-      <div className="relative w-[55%] max-[1024px]:w-full max-[1024px]:h-[50vh] max-[768px]:h-[40vh]">
-        {/* Ambient glow */}
+      {/* Right Side - Store Name Visual */}
+      <div className="relative w-[55%] max-[1024px]:w-full max-[1024px]:h-[40vh] max-[768px]:h-[35vh] flex items-center justify-center overflow-hidden">
+        {/* Background glows */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[rgba(0,119,182,0.2)] via-[rgba(3,4,94,0.8)] to-[rgba(3,4,94,1)]" />
         <div
-          className="absolute -left-[100px] top-1/2 -translate-y-1/2 w-[600px] h-[400px] pointer-events-none z-[1] opacity-60"
-          style={{
-            background: 'radial-gradient(ellipse, rgba(0,180,216,0.15) 0%, transparent 70%)',
-          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[rgba(0,180,216,0.12)] rounded-full blur-[100px]"
+        />
+        <div
+          className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-[rgba(228,255,26,0.08)] rounded-full blur-[80px]"
         />
 
-        {/* Video */}
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover opacity-0"
-        >
-          <source
-            src="/kimi-assets/videos/hero-keyboard-aurora.mp4"
-            type="video/mp4"
-          />
-        </video>
-
-        {/* Left edge gradient overlay */}
+        {/* Left edge gradient */}
         <div
-          className="absolute inset-y-0 left-0 w-[25%] z-[2] pointer-events-none"
+          className="absolute inset-y-0 left-0 w-[30%] z-[2] pointer-events-none"
           style={{
             background: 'linear-gradient(90deg, #03045E 0%, transparent 100%)',
           }}
         />
 
-        {/* Bottom gradient for mobile */}
+        {/* Big Store Name */}
         <div
-          className="absolute inset-x-0 bottom-0 h-[30%] z-[2] pointer-events-none max-[1024px]:block hidden"
-          style={{
-            background: 'linear-gradient(0deg, #03045E 0%, transparent 100%)',
-          }}
-        />
+          ref={logoSideRef}
+          className="relative z-[3] text-center px-8"
+        >
+          {/* Logo dot decoration */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-[rgba(0,180,216,0.5)]" />
+            <span className="logo-dot w-3 h-3 bg-[#00B4D8] rounded-full inline-block" />
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-[rgba(0,180,216,0.5)]" />
+          </div>
+
+          {/* Main name */}
+          <h2 className="text-[80px] max-[1280px]:text-[60px] max-[768px]:text-[48px] font-bold tracking-[-4px] leading-[0.9] text-gradient-aurora shimmer-text">
+            SarahBits
+          </h2>
+
+          {/* Store name subtitle */}
+          <p className="text-[rgba(255,255,255,0.4)] text-lg mt-4 tracking-[4px] uppercase">
+            {storeName}
+          </p>
+
+          {/* Decorative elements */}
+          <div className="flex items-center justify-center gap-3 mt-8">
+            <span className="w-2 h-2 rounded-full bg-[#FF006E] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#00B4D8] animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <span className="w-2 h-2 rounded-full bg-[#E4FF1A] animate-pulse" style={{ animationDelay: '1s' }} />
+          </div>
+        </div>
+
+        {/* Floating decorative circles */}
+        <div className="absolute top-10 right-10 w-20 h-20 rounded-full border border-[rgba(0,180,216,0.15)] animate-[spin_20s_linear_infinite]" />
+        <div className="absolute bottom-10 left-20 w-32 h-32 rounded-full border border-[rgba(255,0,110,0.1)] animate-[spin_30s_linear_infinite_reverse]" />
       </div>
     </section>
   );
