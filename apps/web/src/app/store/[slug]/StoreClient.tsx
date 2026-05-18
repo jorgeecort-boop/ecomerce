@@ -223,7 +223,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
             </div>
             <h2 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
               <span className="bg-gradient-to-r from-white via-blue-200 to-cyan-300 bg-clip-text text-transparent">
-                Innovación en tus manos
+                Innovación en tu alcance
               </span>
             </h2>
             <p className="text-blue-300/60 text-lg mb-8 max-w-xl mx-auto leading-relaxed">
