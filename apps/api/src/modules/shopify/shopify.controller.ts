@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { ShopifyService } from './shopify.service';
 import { AutoFulfillmentService } from './auto-fulfillment.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { SyncProductsDto, CreateShopifyProductDto, FulfillOrderDto } from './dto/shopify.dto';
+import { SyncProductsDto, CreateShopifyProductDto, FulfillOrderDto, ImportProductsDto } from './dto/shopify.dto';
 
 @ApiTags('shopify')
 @Controller('shopify')
@@ -102,6 +102,15 @@ export class ShopifyController {
   @ApiOperation({ summary: 'Get Shopify locations' })
   async getLocations() {
     return this.shopifyService.getLocations();
+  }
+
+  @Post('import-products')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Import products from Shopify to Ecomerce' })
+  @ApiQuery({ name: 'storeId', required: true })
+  async importProducts(@Query('storeId') storeId: string) {
+    return this.shopifyService.importProducts(storeId);
   }
 
   @Get('sync/orders')

@@ -75,3 +75,9 @@ export class WebhookOrderDto {
   @IsString()
   shop_domain: string;
 }
+
+export class ImportProductsDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  storeId: string;
+}

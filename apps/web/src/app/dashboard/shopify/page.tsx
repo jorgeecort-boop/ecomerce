@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useShopify, SyncOrder, ShopifyStats } from '@/hooks/useShopify';
+import { API_URL } from '@ecomerce/utils';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
@@ -21,6 +22,45 @@ export default function ShopifyDashboardPage() {
   const [tab, setTab] = useState<Tab>('overview');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Import state
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+  const [stores, setStores] = useState<any[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState('');
+
+  // Fetch stores for import
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/stores`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data.data || []);
+        setStores(list);
+        if (list.length > 0) setSelectedStoreId(list[0].id);
+      })
+      .catch(() => {});
+  }, [token]);
+
+  const handleImportProducts = async () => {
+    if (!selectedStoreId || !token) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const res = await fetch(`${API_URL}/shopify/import-products?storeId=${selectedStoreId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setImportResult(data);
+    } catch (err: any) {
+      setImportResult({ error: err.message });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const {
     orders: shopifyOrders,
@@ -407,6 +447,78 @@ export default function ShopifyDashboardPage() {
         {/* ── Products Tab ──────────────────────────────────────────────── */}
         {tab === 'products' && (
           <div>
+            {/* Import Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+              <div className="flex max-[768px]:flex-col items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    📥 Importar productos a Ecomerce
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Sincroniza todos los productos de Shopify con tu tienda local
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedStoreId}
+                    onChange={(e) => setSelectedStoreId(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleImportProducts}
+                    disabled={importing || !selectedStoreId || !token}
+                    className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    {importing ? '⏳ Importando...' : '📥 Importar productos'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Import Result */}
+              {importResult && (
+                <div className={`mt-4 p-4 rounded-lg ${
+                  importResult.error
+                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400'
+                    : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400'
+                }`}>
+                  {importResult.error ? (
+                    <p className="text-sm">❌ Error: {importResult.error}</p>
+                  ) : (
+                    <div className="text-sm space-y-1">
+                      <p>✅ <strong>{importResult.imported}</strong> productos importados</p>
+                      <p>⏭️ <strong>{importResult.skipped}</strong> ya existian (actualizados)</p>
+                      <p>📦 <strong>{importResult.total}</strong> total en Shopify</p>
+                      {importResult.errors?.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-red-500">{importResult.errors.length} errores</summary>
+                          <ul className="mt-1 space-y-1">
+                            {importResult.errors.map((e: string, i: number) => (
+                              <li key={i} className="text-xs">{e}</li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                      {importResult.products?.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer">Ver {importResult.products.length} productos importados</summary>
+                          <ul className="mt-1 space-y-1 max-h-40 overflow-y-auto">
+                            {importResult.products.map((p: any) => (
+                              <li key={p.id} className="text-xs">
+                                🛍️ {p.title} <span className="opacity-50">(Shopify #{p.shopifyId})</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             {shopifyProducts.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm">
                 <p className="text-3xl mb-3">🏪</p>
