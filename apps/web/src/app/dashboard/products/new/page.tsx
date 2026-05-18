@@ -16,10 +16,13 @@ interface ProductForm {
   title: string;
   description: string;
   price: string;
+  compareAtPrice: string;
   costPrice: string;
   inventory: string;
   imageUrl: string;
   storeId: string;
+  category: string;
+  tags: string;
 }
 
 export default function NewProductPage() {
@@ -27,10 +30,13 @@ export default function NewProductPage() {
     title: '',
     description: '',
     price: '',
+    compareAtPrice: '',
     costPrice: '',
     inventory: '',
     imageUrl: '',
     storeId: '',
+    category: '',
+    tags: '',
     seoTitle: '',
     seoDescription: '',
     isFeatured: false,
@@ -77,10 +83,13 @@ export default function NewProductPage() {
           title: form.title,
           description: form.description || undefined,
           price: Number(form.price),
+          compareAtPrice: Number(form.compareAtPrice) || undefined,
           costPrice: Number(form.costPrice) || 0,
           inventory: Number(form.inventory) || 0,
           images: form.imageUrl ? [form.imageUrl] : undefined,
           storeId: form.storeId,
+          category: form.category || undefined,
+          tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
           seoTitle: form.seoTitle || undefined,
           seoDescription: form.seoDescription || undefined,
           isFeatured: form.isFeatured,
@@ -201,7 +210,7 @@ export default function NewProductPage() {
           </div>
 
           {/* Prices */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Sale Price ($) *
@@ -216,6 +225,21 @@ export default function NewProductPage() {
                 placeholder="29.99"
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Compare at Price ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.compareAtPrice}
+                onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })}
+                placeholder="49.99"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">Original price (for discounts)</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -285,6 +309,35 @@ export default function NewProductPage() {
               />
             </div>
           )}
+
+          {/* Category & Tags */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Category
+              </label>
+              <input
+                type="text"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="e.g. Electronics, Clothing"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tags
+              </label>
+              <input
+                type="text"
+                value={form.tags}
+                onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                placeholder="wireless, bluetooth, audio"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">Comma-separated</p>
+            </div>
+          </div>
 
           {/* Featured toggle */}
           <div className="flex items-center gap-3">
