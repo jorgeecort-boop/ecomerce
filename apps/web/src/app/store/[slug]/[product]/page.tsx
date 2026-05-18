@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import Script from 'next/script';
 import ProductClient from './ProductClient';
 import { generateProductMetadata } from './seo';
@@ -45,24 +45,67 @@ export default async function ProductPage({
   const { slug, product: productId } = await params;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ecomerce-web.vercel.app';
 
-  const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
-    next: { revalidate: 60 },
-  });
-  if (!storeRes.ok) notFound();
-  const storeRaw = await storeRes.json();
-  const store: Store = storeRaw.data || storeRaw;
-
-  const productRes = await fetch(`${API_URL}/products/${productId}`, {
-    next: { revalidate: 60 },
-  });
-  if (!productRes.ok) notFound();
-  const productRaw = await productRes.json();
-  const product: Product = productRaw.data || productRaw;
-
+  let store: Store | null = null;
+  let product: Product | null = null;
   let relatedProducts: Product[] = [];
+  let hasError = false;
+
+  try {
+    const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (storeRes.ok) {
+      const storeRaw = await storeRes.json();
+      store = storeRaw.data || storeRaw;
+    }
+  } catch { /* ignore */ }
+
+  try {
+    const productRes = await fetch(`${API_URL}/products/${productId}`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (productRes.ok) {
+      const productRaw = await productRes.json();
+      product = productRaw.data || productRaw;
+    }
+  } catch { /* ignore */ }
+
+  if (!product || !store) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-6 animate-pulse">🚀</div>
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">
+            La tienda se esta despertando
+          </h1>
+          <p className="text-slate-500 mb-6">
+            Nuestros servidores estan en modo ahorro de energia. Vuelve a intentarlo en unos segundos.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors"
+            >
+              Reintentar
+            </button>
+            <Link
+              href="/"
+              className="px-6 py-3 rounded-full border-2 border-slate-200 text-slate-600 font-semibold hover:border-slate-300 transition-colors"
+            >
+              Volver al inicio
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   try {
     const relatedRes = await fetch(`${API_URL}/products/store/${store.id}/public?limit=4`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(10000),
     });
     if (relatedRes.ok) {
       const relatedRaw = await relatedRes.json();
@@ -71,9 +114,7 @@ export default async function ProductPage({
         .filter((p: Product) => p.id !== productId)
         .slice(0, 4);
     }
-  } catch {
-    relatedProducts = [];
-  }
+  } catch { /* ignore */ }
 
   const allImages = ([product.imageUrl, ...(product.images ?? [])].filter(Boolean)) as string[];
 

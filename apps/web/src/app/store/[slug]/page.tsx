@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import Script from 'next/script';
 import StoreClient from './StoreClient';
 import { API_URL } from '@ecomerce/utils';
 
-export const revalidate = 60; // ISR: regenerar cada minuto
+export const revalidate = 60;
 
 interface Product {
   id: string;
@@ -17,23 +16,6 @@ interface Product {
   isPublished?: boolean;
 }
 
-function getFirstImage(product: Product): string | undefined {
-  if (product.imageUrl) return product.imageUrl;
-  if (!product.images) return undefined;
-  try {
-    let imgs = product.images;
-    if (typeof imgs === 'string') imgs = JSON.parse(imgs);
-    if (Array.isArray(imgs) && imgs.length > 0) {
-      let first = imgs[0];
-      if (typeof first === 'string' && first.startsWith('[')) first = JSON.parse(first)[0];
-      return typeof first === 'string' ? first : undefined;
-    }
-  } catch {
-    /* ignore */
-  }
-  return undefined;
-}
-
 interface Store {
   id: string;
   name: string;
@@ -42,36 +24,28 @@ interface Store {
   logoUrl?: string;
 }
 
-// Server Component - renders on the server for better SEO
-export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  
-  let store: Store | null = null;
-  let products: Product[] = [];
-
+async function fetchStoreData(slug: string): Promise<{ store: Store | null; products: Product[]; error: string | null }> {
   try {
-    // Fetch store data on the server
     const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
-      signal: AbortSignal.timeout(8000),
-      // Reuse connection for better performance
-      next: { revalidate: 60 } // Cache for 1 minute
+      signal: AbortSignal.timeout(10000),
+      next: { revalidate: 60 },
     });
-    
+
     if (!storeRes.ok) {
-      notFound();
+      return { store: null, products: [], error: `API returned ${storeRes.status}` };
     }
-    
+
     const storeData = await storeRes.json();
     const storeDataUnwrapped = storeData.data || storeData;
-    store = storeDataUnwrapped;
+    const store = storeDataUnwrapped as Store;
 
-    // Products come embedded in the store response
+    let products: Product[] = [];
     if (storeDataUnwrapped.products && Array.isArray(storeDataUnwrapped.products)) {
       products = storeDataUnwrapped.products.filter((p: any) => p.isPublished);
     } else {
       const productsRes = await fetch(
         `${API_URL}/products/store/${storeDataUnwrapped.id}/public?limit=50`,
-        { signal: AbortSignal.timeout(8000) }
+        { signal: AbortSignal.timeout(10000) }
       );
       if (productsRes.ok) {
         const productsData = await productsRes.json();
@@ -79,20 +53,57 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         products = Array.isArray(unwrapped) ? unwrapped : [];
       }
     }
+
+    return { store, products, error: null };
   } catch (err: any) {
-    // If store not found, show 404
-    notFound();
+    return { store: null, products: [], error: err.message || 'Connection failed' };
+  }
+}
+
+export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { store, products, error } = await fetchStoreData(slug);
+
+  if (error && !store) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-6 animate-pulse">🚀</div>
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">
+            La tienda se esta despertando
+          </h1>
+          <p className="text-slate-500 mb-6">
+            Nuestros servidores estan en modo ahorro de energia. Vuelve a intentarlo en unos segundos.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors"
+            >
+              Reintentar
+            </button>
+            <Link
+              href="/"
+              className="px-6 py-3 rounded-full border-2 border-slate-200 text-slate-600 font-semibold hover:border-slate-300 transition-colors"
+            >
+              Volver al inicio
+            </Link>
+          </div>
+          <p className="text-xs text-slate-400 mt-6">
+            Error: {error}
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  // Pass initial data to client component for interactivity
-  // At this point, store is guaranteed to be non-null because notFound() would have been called
-  const jsonLd = {
+  const jsonLd = store ? {
     '@context': 'https://schema.org',
     '@type': 'Store',
-    name: store!.name,
-    description: store!.description || `${store!.name} - Tech Gadgets Store`,
-    url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/store/${store!.slug}`,
-    ...(store!.logoUrl ? { logo: store!.logoUrl } : {}),
+    name: store.name,
+    description: store.description || `${store.name} - Tech Gadgets Store`,
+    url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/store/${store.slug}`,
+    ...(store.logoUrl ? { logo: store.logoUrl } : {}),
     ...(products.length > 0 ? {
       makesOffer: products.map((p) => ({
         '@type': 'Offer',
@@ -107,45 +118,41 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         availability: (p.inventory ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       })),
     } : {}),
-  };
+  } : null;
 
   return (
     <>
-      <Script
-        id="store-jsonld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <StoreClient
-        store={store!}
-        products={products}
-      />
+      {jsonLd && (
+        <Script
+          id="store-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <StoreClient store={store!} products={products} />
     </>
   );
 }
 
-// Generate metadata for SEO
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  
+
   try {
     const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
       signal: AbortSignal.timeout(5000),
       next: { revalidate: 300 }
     });
-    
+
     if (!storeRes.ok) {
-      return {
-        title: 'Store Not Found',
-      };
+      return { title: 'SarahBits - Tech Gadgets' };
     }
-    
+
     const storeRaw = await storeRes.json();
     const store = storeRaw.data || storeRaw;
-    
-    const storeName = store.name || 'Store';
-    const storeDesc = store.description || `Discover innovative tech gadgets at ${storeName}`;
-    
+
+    const storeName = store.name || 'SarahBits';
+    const storeDesc = store.description || `Descubre los mejores gadgets tecnologicos en ${storeName}`;
+
     return {
       title: `${storeName} - Tech Gadgets`,
       description: storeDesc,
@@ -154,7 +161,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         description: storeDesc,
         type: 'website',
         url: `/store/${store.slug || slug}`,
-        siteName: 'Sarhbits',
+        siteName: 'SarahBits',
         images: store.logoUrl ? [{ url: store.logoUrl, width: 256, height: 256 }] : [],
         locale: 'es_CO',
       },
@@ -166,8 +173,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       },
     };
   } catch {
-    return {
-      title: 'Store - E-Commerce',
-    };
+    return { title: 'SarahBits - Tech Gadgets' };
   }
 }
