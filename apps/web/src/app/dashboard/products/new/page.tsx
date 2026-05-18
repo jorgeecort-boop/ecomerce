@@ -79,7 +79,7 @@ export default function NewProductPage() {
           price: Number(form.price),
           costPrice: Number(form.costPrice) || 0,
           inventory: Number(form.inventory) || 0,
-          imageUrl: form.imageUrl || undefined,
+          images: form.imageUrl ? [form.imageUrl] : undefined,
           storeId: form.storeId,
           seoTitle: form.seoTitle || undefined,
           seoDescription: form.seoDescription || undefined,

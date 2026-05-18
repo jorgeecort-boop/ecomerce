@@ -65,4 +65,20 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => Boolean)
   trackInventory?: boolean;
+
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isFeatured?: boolean;
+
+  @ApiProperty({ example: 'Product SEO Title', required: false })
+  @IsString()
+  @IsOptional()
+  seoTitle?: string;
+
+  @ApiProperty({ example: 'Product SEO Description', required: false })
+  @IsString()
+  @IsOptional()
+  seoDescription?: string;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -11,10 +11,14 @@ interface Product {
   title: string;
   description?: string;
   price: number;
+  compareAtPrice?: number;
   imageUrl?: string;
   images?: any;
   inventory?: number;
   isPublished?: boolean;
+  isFeatured?: boolean;
+  category?: string;
+  tags?: string[];
 }
 
 function getFirstImage(product: Product): string | undefined {
@@ -46,6 +50,7 @@ interface StoreClientProps {
 }
 
 const CATEGORIES = ['All', 'Audio', 'Gaming', 'Streaming', 'Wearables', 'Accesorios', 'Baterias'];
+const PAGE_SIZE = 12;
 
 export default function StoreClient({ store, products }: StoreClientProps) {
   const [added, setAdded] = useState<string | null>(null);
@@ -53,12 +58,22 @@ export default function StoreClient({ store, products }: StoreClientProps) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [sortBy, setSortBy] = useState('featured');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const { cart, addItem, removeItem, updateQuantity, clearCart, cartTotal, cartCount } =
     useCart(store.slug);
 
   const { format, currency, setCurrency, availableCurrencies, isLoading: rateLoading } =
     useCurrency();
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleAddToCart = (product: Product) => {
     addItem({
@@ -80,19 +95,70 @@ export default function StoreClient({ store, products }: StoreClientProps) {
     }
   };
 
-  const filteredProducts =
-    activeCategory === 'All'
-      ? products
-      : products.filter((p) => {
-          const cat = (p as any).category || '';
-          return cat.toLowerCase().includes(activeCategory.toLowerCase()) ||
-            (activeCategory === 'Audio' && (cat.includes('Audio') || p.title.toLowerCase().includes('audifonos') || p.title.toLowerCase().includes('bluetooth'))) ||
-            (activeCategory === 'Gaming' && (cat.includes('Gaming') || p.title.toLowerCase().includes('gamer') || p.title.toLowerCase().includes('mouse'))) ||
-            (activeCategory === 'Streaming' && (cat.includes('Streaming') || p.title.toLowerCase().includes('streaming') || p.title.toLowerCase().includes('webcam') || p.title.toLowerCase().includes('ring'))) ||
-            (activeCategory === 'Wearables' && (cat.includes('Wearable') || p.title.toLowerCase().includes('smartwatch'))) ||
-            (activeCategory === 'Accesorios' && (cat.includes('Accesorio') || p.title.toLowerCase().includes('soporte') || p.title.toLowerCase().includes('hub') || p.title.toLowerCase().includes('cargador'))) ||
-            (activeCategory === 'Baterias' && (cat.includes('Bateria') || p.title.toLowerCase().includes('power') || p.title.toLowerCase().includes('bateria')));
-        });
+  // Filter, search, sort
+  const processedProducts = useMemo(() => {
+    let result = [...products];
+
+    // Category filter
+    if (activeCategory !== 'All') {
+      result = result.filter((p) => {
+        const cat = p.category || '';
+        return cat.toLowerCase().includes(activeCategory.toLowerCase()) ||
+          (activeCategory === 'Audio' && (cat.includes('Audio') || p.title.toLowerCase().includes('audifonos') || p.title.toLowerCase().includes('bluetooth'))) ||
+          (activeCategory === 'Gaming' && (cat.includes('Gaming') || p.title.toLowerCase().includes('gamer') || p.title.toLowerCase().includes('mouse'))) ||
+          (activeCategory === 'Streaming' && (cat.includes('Streaming') || p.title.toLowerCase().includes('streaming') || p.title.toLowerCase().includes('webcam') || p.title.toLowerCase().includes('ring'))) ||
+          (activeCategory === 'Wearables' && (cat.includes('Wearable') || p.title.toLowerCase().includes('smartwatch'))) ||
+          (activeCategory === 'Accesorios' && (cat.includes('Accesorio') || p.title.toLowerCase().includes('soporte') || p.title.toLowerCase().includes('hub') || p.title.toLowerCase().includes('cargador'))) ||
+          (activeCategory === 'Baterias' && (cat.includes('Bateria') || p.title.toLowerCase().includes('power') || p.title.toLowerCase().includes('bateria')));
+      });
+    }
+
+    // Search
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.toLowerCase();
+      result = result.filter((p) =>
+        p.title.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        p.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+
+    // Sort
+    switch (sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'name-asc':
+        result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'newest':
+        break; // Already sorted by createdAt desc from API
+      case 'featured':
+      default:
+        result.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+        break;
+    }
+
+    return result;
+  }, [products, activeCategory, debouncedQuery, sortBy]);
+
+  const paginatedProducts = processedProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < processedProducts.length;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setActiveCategory('All');
+    setSearchQuery('');
+    setSortBy('featured');
+    setVisibleCount(PAGE_SIZE);
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -204,7 +270,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => { setActiveCategory(cat); setVisibleCount(PAGE_SIZE); }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeCategory === cat
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20'
@@ -218,8 +284,72 @@ export default function StoreClient({ store, products }: StoreClientProps) {
         </div>
       </section>
 
+      {/* ─── SEARCH & SORT BAR ───────────────────────────── */}
+      <section id="products" className="py-6 px-4 border-b border-blue-900/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(PAGE_SIZE); }}
+                placeholder="Buscar productos..."
+                className="w-full bg-blue-500/5 border border-blue-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-blue-400/30 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400/40 hover:text-blue-400"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-blue-300 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="featured">⭐ Destacados</option>
+              <option value="newest">🕐 Más nuevos</option>
+              <option value="price-asc">💰 Precio: menor a mayor</option>
+              <option value="price-desc">💰 Precio: mayor a menor</option>
+              <option value="name-asc">🔤 Nombre A-Z</option>
+            </select>
+          </div>
+
+          {/* Active filters */}
+          {(searchQuery || activeCategory !== 'All' || sortBy !== 'featured') && (
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              {activeCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+                  {activeCategory}
+                  <button onClick={() => { setActiveCategory('All'); setVisibleCount(PAGE_SIZE); }} className="hover:text-white">✕</button>
+                </span>
+              )}
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+                  &quot;{searchQuery}&quot;
+                  <button onClick={() => setSearchQuery('')} className="hover:text-white">✕</button>
+                </span>
+              )}
+              <button onClick={resetFilters} className="text-xs text-blue-400/40 hover:text-blue-400 underline">
+                Limpiar filtros
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* ─── PRODUCTS ────────────────────────────────────── */}
-      <section id="products" className="py-12 px-4">
+      <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -227,7 +357,8 @@ export default function StoreClient({ store, products }: StoreClientProps) {
                 {activeCategory === 'All' ? 'Todos los productos' : activeCategory}
               </h2>
               <p className="text-blue-400/40 text-sm mt-1">
-                {filteredProducts.length} productos disponibles
+                {processedProducts.length} producto{processedProducts.length !== 1 ? 's' : ''}
+                {searchQuery && ` para "${searchQuery}"`}
               </p>
             </div>
             {rateLoading && (
@@ -237,90 +368,154 @@ export default function StoreClient({ store, products }: StoreClientProps) {
             )}
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {processedProducts.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-6xl mb-4">🔍</p>
-              <p className="text-blue-400/60">No hay productos en esta categoría</p>
+              <p className="text-blue-400/60 text-lg mb-2">No se encontraron productos</p>
+              <p className="text-blue-400/30 text-sm mb-6">
+                {searchQuery ? `No hay resultados para "${searchQuery}"` : 'No hay productos en esta categoría'}
+              </p>
+              <button
+                onClick={resetFilters}
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl text-sm font-medium hover:from-blue-500 hover:to-cyan-400 transition-all"
+              >
+                Ver todos los productos
+              </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="group relative bg-gradient-to-b from-blue-500/5 to-transparent border border-blue-500/10 rounded-2xl overflow-hidden hover:border-blue-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/5"
-                >
-                  <Link href={`/store/${store.slug}/${product.id}`}>
-                    <div className="aspect-square bg-gradient-to-br from-blue-900/20 to-black overflow-hidden relative">
-                      {getFirstImage(product) ? (
-                        <Image
-                          src={getFirstImage(product)!}
-                          alt={product.title}
-                          width={400}
-                          height={400}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-5xl">
-                          ⚡
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {paginatedProducts.map((product) => {
+                  const isOutOfStock = (product.inventory ?? 0) === 0;
+                  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+                  const discountPercent = hasDiscount
+                    ? Math.round((1 - product.price / (product.compareAtPrice as number)) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className={`group relative bg-gradient-to-b from-blue-500/5 to-transparent border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/5 ${
+                        isOutOfStock
+                          ? 'border-blue-500/5 opacity-60'
+                          : 'border-blue-500/10 hover:border-blue-500/30'
+                      }`}
+                    >
+                      <Link href={`/store/${store.slug}/${product.id}`}>
+                        <div className="aspect-square bg-gradient-to-br from-blue-900/20 to-black overflow-hidden relative">
+                          {getFirstImage(product) ? (
+                            <Image
+                              src={getFirstImage(product)!}
+                              alt={product.title}
+                              width={400}
+                              height={400}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-5xl">
+                              ⚡
+                            </div>
+                          )}
+
+                          {/* Badges */}
+                          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                            {product.isFeatured && (
+                              <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold rounded-lg shadow-lg">
+                                ⭐ Destacado
+                              </span>
+                            )}
+                            {hasDiscount && (
+                              <span className="px-2 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] font-bold rounded-lg shadow-lg">
+                                -{discountPercent}%
+                              </span>
+                            )}
+                            {isOutOfStock && (
+                              <span className="px-2 py-1 bg-gray-800/90 backdrop-blur text-gray-300 text-[10px] font-bold rounded-lg">
+                                Agotado
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                            <span className="px-2 py-1 bg-black/60 backdrop-blur text-xs text-blue-300 rounded-lg">
+                              Ver
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <span className="px-2 py-1 bg-black/60 backdrop-blur text-xs text-blue-300 rounded-lg">
-                          Ver
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      {(product as any).category && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                          {(product as any).category}
-                        </span>
-                      )}
-                    </div>
-                    <Link href={`/store/${store.slug}/${product.id}`}>
-                      <h3 className="font-semibold text-white text-sm leading-tight mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
-                        {product.title}
-                      </h3>
-                    </Link>
-                    <p className="text-xs text-blue-400/40 mb-3 line-clamp-1">
-                      {product.description || 'Tech Gadget'}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                          {rateLoading ? '...' : format(Number(product.price))}
-                        </span>
-                        {currency !== 'USD' && (
-                          <p className="text-[10px] text-blue-400/30">
-                            ${Number(product.price).toFixed(2)} USD
+                      </Link>
+
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          {product.category && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                              {product.category}
+                            </span>
+                          )}
+                        </div>
+                        <Link href={`/store/${store.slug}/${product.id}`}>
+                          <h3 className="font-semibold text-white text-sm leading-tight mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
+                            {product.title}
+                          </h3>
+                        </Link>
+                        <p className="text-xs text-blue-400/40 mb-3 line-clamp-1">
+                          {product.description || 'Tech Gadget'}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                              {rateLoading ? '...' : format(Number(product.price))}
+                            </span>
+                            {hasDiscount && (
+                              <p className="text-[10px] text-blue-400/30 line-through">
+                                {rateLoading ? '' : format(Number(product.compareAtPrice))}
+                              </p>
+                            )}
+                            {currency !== 'USD' && !hasDiscount && (
+                              <p className="text-[10px] text-blue-400/30">
+                                ${Number(product.price).toFixed(2)} USD
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => !isOutOfStock && handleAddToCart(product)}
+                            disabled={isOutOfStock}
+                            className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                              isOutOfStock
+                                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                : added === product.id
+                                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                  : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20'
+                            }`}
+                          >
+                            {isOutOfStock ? 'Agotado' : added === product.id ? '✓ Added' : '+ Add'}
+                          </button>
+                        </div>
+                        {!isOutOfStock && (product.inventory ?? 0) > 0 && (product.inventory ?? 0) <= 10 && (
+                          <p className="text-[10px] text-red-400 mt-2 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                            Only {product.inventory} left
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                          added === product.id
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                            : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20'
-                        }`}
-                      >
-                        {added === product.id ? '✓ Added' : '+ Add'}
-                      </button>
                     </div>
-                    {(product.inventory ?? 0) > 0 && (product.inventory ?? 0) <= 10 && (
-                      <p className="text-[10px] text-red-400 mt-2 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                        Only {product.inventory} left
-                      </p>
-                    )}
-                  </div>
+                  );
+                })}
+              </div>
+
+              {/* Load more */}
+              {hasMore && (
+                <div className="text-center mt-12">
+                  <button
+                    onClick={loadMore}
+                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-cyan-400 transition-all shadow-lg shadow-blue-500/25"
+                  >
+                    Cargar más ({processedProducts.length - visibleCount} restantes)
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>

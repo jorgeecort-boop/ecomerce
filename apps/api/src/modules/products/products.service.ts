@@ -41,15 +41,17 @@ export class ProductsService {
         description: true,
         price: true,
         compareAtPrice: true,
-        // Removed 'images' from catalog query to reduce payload size
+        images: true,
         inventory: true,
         isPublished: true,
+        isFeatured: true,
         storeId: true,
         category: true,
+        tags: true,
       },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
     } as any);
   }
 
