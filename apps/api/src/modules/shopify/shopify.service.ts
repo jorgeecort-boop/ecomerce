@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../config/prisma.service';
 import * as crypto from 'crypto';
 
 export interface ShopifyOrder {
@@ -56,10 +55,7 @@ export class ShopifyService {
   private readonly apiKey: string;
   private readonly accessToken: string;
 
-  constructor(
-    private config: ConfigService,
-    private prisma: PrismaService
-  ) {
+  constructor(private config: ConfigService) {
     this.storeUrl = this.config.get('SHOPIFY_STORE_URL') || '';
     this.apiKey = this.config.get('SHOPIFY_API_KEY') || '';
     this.accessToken = this.config.get('SHOPIFY_ACCESS_TOKEN') || '';
@@ -237,119 +233,5 @@ export class ShopifyService {
     const secret = this.config.get('SHOPIFY_API_SECRET') || '';
     const hash = crypto.createHmac('sha256', secret).update(body, 'utf8').digest('base64');
     return hash === hmacHeader;
-  }
-
-  async importProducts(storeId: string): Promise<{
-    imported: number;
-    skipped: number;
-    total: number;
-    products: { id: string; title: string; shopifyId: number }[];
-    errors: string[];
-  }> {
-    const result = { imported: 0, skipped: 0, total: 0, products: [] as any[], errors: [] as string[] };
-
-    try {
-      // Fetch ALL products from Shopify (paginate to get all)
-      let allProducts: ShopifyProduct[] = [];
-      let page = 1;
-      const limit = 250;
-
-      while (true) {
-        const endpoint = `/products.json?limit=${limit}&page=${page}`;
-        try {
-          const data = await this.shopifyFetch<any>(endpoint);
-          const batch = data.products || [];
-          if (batch.length === 0) break;
-          allProducts = allProducts.concat(batch);
-          if (batch.length < limit) break;
-          page++;
-        } catch {
-          break;
-        }
-      }
-
-      result.total = allProducts.length;
-
-      for (const sp of allProducts) {
-        try {
-          // Check if already imported
-          const existing = await this.prisma.shopifyProductMapping.findUnique({
-            where: { shopifyProductId_storeId: { shopifyProductId: sp.id, storeId } },
-          });
-
-          if (existing) {
-            // Update existing mapping timestamp
-            await this.prisma.shopifyProductMapping.update({
-              where: { id: existing.id },
-              data: { lastSyncedAt: new Date(), syncStatus: 'SYNCED' },
-            });
-
-            // Update the linked product if it exists
-            if (existing.ecomerceProductId) {
-              const variant = sp.variants?.[0] || {};
-              await this.prisma.product.update({
-                where: { id: existing.ecomerceProductId },
-                data: {
-                  title: sp.title,
-                  description: sp.body_html || '',
-                  price: variant.price ? parseFloat(variant.price) : 0,
-                  compareAtPrice: variant.compare_at_price ? parseFloat(variant.compare_at_price) : null,
-                  sku: variant.sku || null,
-                  barcode: variant.barcode || null,
-                  images: (sp.images || []).map((i: any) => i.src).filter(Boolean),
-                  category: sp.product_type || null,
-                  inventory: variant.inventory_quantity || 0,
-                  isPublished: sp.status === 'active',
-                  updatedAt: new Date(),
-                },
-              });
-            }
-
-            result.skipped++;
-            continue;
-          }
-
-          // Map Shopify product to our Product model
-          const variant = sp.variants?.[0] || {};
-
-          const product = await this.prisma.product.create({
-            data: {
-              title: sp.title,
-              description: sp.body_html || '',
-              price: variant.price ? parseFloat(variant.price) : 0,
-              compareAtPrice: variant.compare_at_price ? parseFloat(variant.compare_at_price) : null,
-              costPrice: 0,
-              sku: variant.sku || null,
-              barcode: variant.barcode || null,
-              images: (sp.images || []).map((i: any) => i.src).filter(Boolean),
-              category: sp.product_type || null,
-              tags: sp.handle ? [sp.handle] : [],
-              inventory: variant.inventory_quantity || 0,
-              isPublished: sp.status === 'active',
-              storeId: storeId,
-            },
-          });
-
-          // Create mapping
-          await this.prisma.shopifyProductMapping.create({
-            data: {
-              shopifyProductId: sp.id,
-              ecomerceProductId: product.id,
-              storeId: storeId,
-            },
-          });
-
-          result.products.push({ id: product.id, title: sp.title, shopifyId: sp.id });
-          result.imported++;
-        } catch (err: any) {
-          result.errors.push(`Product ${sp.title}: ${err.message}`);
-        }
-      }
-    } catch (err: any) {
-      this.logger.error('Failed to import products', err);
-      result.errors.push(`Fatal: ${err.message}`);
-    }
-
-    return result;
   }
 }

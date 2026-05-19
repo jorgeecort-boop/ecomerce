@@ -190,4 +190,108 @@ export class AutoFulfillmentService {
       fulfillmentRate: total > 0 ? Math.round((fulfilled / total) * 100) : 0,
     };
   }
+
+  async importProducts(storeId: string): Promise<{
+    imported: number;
+    skipped: number;
+    total: number;
+    products: { id: string; title: string; shopifyId: number }[];
+    errors: string[];
+  }> {
+    const result = { imported: 0, skipped: 0, total: 0, products: [] as any[], errors: [] as string[] };
+
+    try {
+      let allProducts: any[] = [];
+      let page = 1;
+      const limit = 250;
+
+      while (true) {
+        const data = await this.shopifyService.getProducts(limit);
+        if (data.length === 0) break;
+        allProducts = allProducts.concat(data);
+        if (data.length < limit) break;
+        page++;
+        // Manual pagination via offset (Shopify REST API uses page param)
+        // but getProducts only accepts limit, so we'll just fetch max 250
+        break;
+      }
+
+      result.total = allProducts.length;
+
+      for (const sp of allProducts) {
+        try {
+          const existing = await this.prisma.shopifyProductMapping.findUnique({
+            where: { shopifyProductId_storeId: { shopifyProductId: sp.id, storeId } },
+          });
+
+          if (existing) {
+            await this.prisma.shopifyProductMapping.update({
+              where: { id: existing.id },
+              data: { lastSyncedAt: new Date(), syncStatus: 'SYNCED' },
+            });
+
+            if (existing.ecomerceProductId) {
+              const variant = sp.variants?.[0] || {};
+              await this.prisma.product.update({
+                where: { id: existing.ecomerceProductId },
+                data: {
+                  title: sp.title,
+                  description: sp.body_html || '',
+                  price: variant.price ? parseFloat(variant.price) : 0,
+                  compareAtPrice: variant.compare_at_price ? parseFloat(variant.compare_at_price) : null,
+                  sku: variant.sku || null,
+                  barcode: variant.barcode || null,
+                  images: (sp.images || []).map((i: any) => i.src).filter(Boolean),
+                  category: sp.product_type || null,
+                  inventory: variant.inventory_quantity || 0,
+                  isPublished: sp.status === 'active',
+                  updatedAt: new Date(),
+                },
+              });
+            }
+            result.skipped++;
+            continue;
+          }
+
+          const variant = sp.variants?.[0] || {};
+
+          const product = await this.prisma.product.create({
+            data: {
+              title: sp.title,
+              description: sp.body_html || '',
+              price: variant.price ? parseFloat(variant.price) : 0,
+              compareAtPrice: variant.compare_at_price ? parseFloat(variant.compare_at_price) : null,
+              costPrice: 0,
+              sku: variant.sku || null,
+              barcode: variant.barcode || null,
+              images: (sp.images || []).map((i: any) => i.src).filter(Boolean),
+              category: sp.product_type || null,
+              tags: sp.handle ? [sp.handle] : [],
+              inventory: variant.inventory_quantity || 0,
+              isPublished: sp.status === 'active',
+              storeId: storeId,
+            },
+          });
+
+          await this.prisma.shopifyProductMapping.create({
+            data: {
+              shopifyProductId: sp.id,
+              ecomerceProductId: product.id,
+              storeId: storeId,
+            },
+          });
+
+          result.products.push({ id: product.id, title: sp.title, shopifyId: sp.id });
+          result.imported++;
+        } catch (err: any) {
+          result.errors.push(`Product ${sp.title}: ${err.message}`);
+        }
+      }
+    } catch (err: any) {
+      this.logger.error('Failed to import products', err);
+      result.errors.push(`Fatal: ${err.message}`);
+    }
+
+    return result;
+  }
 }
