@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
 import { AddToCartDto, UpdateCartItemDto, CheckoutDto } from './dto/cart.dto';
-import { Cart, CartItem, Product } from '@ecomerce/db';
+import { Cart, CartItem, Product } from '@prisma/client';
 import { TelegramService } from '../../common/telegram.service';
 
 @Injectable()

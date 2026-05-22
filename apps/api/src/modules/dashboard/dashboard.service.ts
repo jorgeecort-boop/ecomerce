@@ -71,7 +71,7 @@ export class DashboardService {
       topProducts,
       ordersByStatus,
       recentOrders: orders,
-      lowStockProducts: lowStock.map((p) => ({
+      lowStockProducts: lowStock.map((p: any) => ({
         id: p.id,
         title: p.title,
         inventory: p.inventory,
@@ -145,7 +145,7 @@ export class DashboardService {
       topProducts,
       ordersByStatus,
       recentOrders: orders,
-      lowStockProducts: lowStock.map((p) => ({
+      lowStockProducts: lowStock.map((p: any) => ({
         id: p.id,
         title: p.title,
         inventory: p.inventory,
@@ -184,8 +184,8 @@ export class DashboardService {
     }
 
     return Array.from(revenueMap.entries())
-      .map(([date, revenue]) => ({ date, revenue }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .map(([date, revenue]: [string, number]) => ({ date, revenue }))
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
   }
 
   private async getRevenueByDays(storeIds: string[]): Promise<{ date: string; revenue: number }[]> {
@@ -219,8 +219,8 @@ export class DashboardService {
     }
 
     return Array.from(revenueMap.entries())
-      .map(([date, revenue]) => ({ date, revenue }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .map(([date, revenue]: [string, number]) => ({ date, revenue }))
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
   }
 
   private async getTopProducts(
@@ -254,7 +254,7 @@ export class DashboardService {
     }
 
     return Array.from(productMap.values())
-      .sort((a, b) => b.revenue - a.revenue)
+      .sort((a: any, b: any) => b.revenue - a.revenue)
       .slice(0, 5);
   }
 
@@ -289,7 +289,7 @@ export class DashboardService {
     }
 
     return Array.from(productMap.values())
-      .sort((a, b) => b.revenue - a.revenue)
+      .sort((a: any, b: any) => b.revenue - a.revenue)
       .slice(0, 5);
   }
 
@@ -300,7 +300,7 @@ export class DashboardService {
       _count: { id: true },
     });
 
-    return orders.map((o) => ({
+    return orders.map((o: any) => ({
       status: o.status,
       count: o._count.id,
     }));
@@ -315,7 +315,7 @@ export class DashboardService {
       _count: { id: true },
     });
 
-    return orders.map((o) => ({
+    return orders.map((o: any) => ({
       status: o.status,
       count: o._count.id,
     }));
