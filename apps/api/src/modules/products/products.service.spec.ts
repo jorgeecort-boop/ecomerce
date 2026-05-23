@@ -32,8 +32,8 @@ describe('ProductsService - Selective Queries', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
-  describe('findPublishedByStore - excludes images from catalog', () => {
-    it('should not select images field in catalog query', async () => {
+  describe('findPublishedByStore - selects catalog fields', () => {
+    it('should select the correct fields for catalog listing', async () => {
       (prisma.product.findMany as jest.fn).mockResolvedValue([]);
 
       await service.findPublishedByStore('store1', 1, 20);
@@ -46,18 +46,22 @@ describe('ProductsService - Selective Queries', () => {
             description: true,
             price: true,
             compareAtPrice: true,
+            images: true,
             inventory: true,
             isPublished: true,
+            isFeatured: true,
             storeId: true,
             category: true,
-            // images should NOT be in select
+            tags: true,
           }),
         })
       );
 
-      // Verify images is NOT selected
+      // Verify all expected catalog fields are present
       const selectObj = (prisma.product.findMany as jest.fn).mock.calls[0][0].select;
-      expect(selectObj.images).toBeUndefined();
+      expect(selectObj.images).toBe(true);
+      expect(selectObj.isFeatured).toBe(true);
+      expect(selectObj.tags).toBe(true);
     });
   });
 

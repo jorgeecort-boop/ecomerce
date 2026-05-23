@@ -201,20 +201,8 @@ export class AutoFulfillmentService {
     const result = { imported: 0, skipped: 0, total: 0, products: [] as any[], errors: [] as string[] };
 
     try {
-      let allProducts: any[] = [];
-      let page = 1;
       const limit = 250;
-
-      while (true) {
-        const data = await this.shopifyService.getProducts(limit);
-        if (data.length === 0) break;
-        allProducts = allProducts.concat(data);
-        if (data.length < limit) break;
-        page++;
-        // Manual pagination via offset (Shopify REST API uses page param)
-        // but getProducts only accepts limit, so we'll just fetch max 250
-        break;
-      }
+      const allProducts = await this.shopifyService.getProducts(limit);
 
       result.total = allProducts.length;
 
