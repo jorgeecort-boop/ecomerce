@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
 import { CreateTrendingDto } from './dto/create-trending.dto';
-import { TrendingProduct } from '@ecomerce/db';
+import { TrendingProduct } from '@prisma/client';
 
 /**
  * TrendingService

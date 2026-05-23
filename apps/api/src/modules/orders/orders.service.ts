@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
-import { Prisma } from '@ecomerce/db';
+import { Prisma } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderStatus, PaymentStatus } from '@ecomerce/db';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()

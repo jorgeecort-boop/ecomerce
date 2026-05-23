@@ -3,7 +3,7 @@ import { PrismaService } from '../../config/prisma.service';
 import { slugify } from '@ecomerce/utils';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
-import { Store } from '@ecomerce/db';
+import { Store } from '@prisma/client';
 
 @Injectable()
 export class StoresService {
