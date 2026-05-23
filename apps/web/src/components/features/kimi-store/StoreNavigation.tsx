@@ -91,6 +91,7 @@ export default function StoreNavigation({
 
           {/* Wishlist */}
           <button
+            aria-label="Abrir favoritos"
             onClick={onWishlistClick}
             className="relative text-[rgba(255,255,255,0.55)] hover:text-pink-400 transition-colors duration-200"
           >
@@ -104,6 +105,8 @@ export default function StoreNavigation({
 
           {/* Cart */}
           <button
+            aria-label="Abrir carrito"
+            data-testid="store-cart-button"
             onClick={onCartClick}
             className="relative text-[rgba(255,255,255,0.55)] hover:text-[#00B4D8] transition-colors duration-200"
           >

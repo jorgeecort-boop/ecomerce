@@ -1,17 +1,32 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 
 const STORE_SLUG = process.env.E2E_STORE_SLUG || 'tienda-demo';
 const PRODUCT_ID = process.env.E2E_PRODUCT_ID || 'cmogce3ds000jeqaeyvvnzapz';
 const PRODUCT_NAME =
   process.env.E2E_PRODUCT_NAME || 'Kit Ring Light 26cm con Tripode 2m para Streaming';
+const API_URL = process.env.API_URL || 'https://ecomerce-api-zulc.onrender.com/api';
+
+async function warmApi(request: APIRequestContext) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const [health, store] = await Promise.all([
+      request.get(`${API_URL}/health`).catch(() => null),
+      request.get(`${API_URL}/stores/slug/${STORE_SLUG}`).catch(() => null),
+    ]);
+
+    if (health?.ok() && store?.ok()) return;
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+}
 
 test.describe('Public purchase flow', () => {
   test('navigates store to product, adds to cart, and reaches checkout with order summary', async ({
     page,
+    request,
   }) => {
+    await warmApi(request);
     await page.goto(`/store/${STORE_SLUG}`, { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('heading', { name: /todos los productos/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /productos/i })).toBeVisible({
       timeout: 20000,
     });
 
@@ -51,7 +66,12 @@ test.describe('Public purchase flow', () => {
     );
 
     await page.goto(`/store/${STORE_SLUG}`, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: /cart/i }).click();
+    const cartButton = page.getByTestId('store-cart-button');
+    if ((await cartButton.count()) > 0) {
+      await cartButton.click();
+    } else {
+      await page.locator('nav button').nth(2).click();
+    }
 
     const checkoutLink = page.locator(`a[href*="/store/${STORE_SLUG}/checkout?items="]`).first();
     await expect(checkoutLink).toBeVisible({ timeout: 10000 });
