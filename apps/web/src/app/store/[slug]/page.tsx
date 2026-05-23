@@ -1,70 +1,41 @@
 import Link from 'next/link';
 import Script from 'next/script';
 import StoreClient from './StoreClient';
+import { fetchStoreData } from './data';
 import { API_URL } from '@ecomerce/utils';
 
 export const revalidate = 60;
 
-interface Product {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-  imageUrl?: string;
-  images?: any;
-  inventory?: number;
-  isPublished?: boolean;
-}
-
-interface Store {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  logoUrl?: string;
-}
-
-async function fetchStoreData(slug: string): Promise<{ store: Store | null; products: Product[]; error: string | null }> {
-  try {
-    const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
-      signal: AbortSignal.timeout(10000),
-      next: { revalidate: 60 },
-    });
-
-    if (!storeRes.ok) {
-      return { store: null, products: [], error: `API returned ${storeRes.status}` };
-    }
-
-    const storeData = await storeRes.json();
-    const storeDataUnwrapped = storeData.data || storeData;
-    const store = storeDataUnwrapped as Store;
-
-    let products: Product[] = [];
-    if (storeDataUnwrapped.products && Array.isArray(storeDataUnwrapped.products)) {
-      products = storeDataUnwrapped.products.filter((p: any) => p.isPublished);
-    } else {
-      const productsRes = await fetch(
-        `${API_URL}/products/store/${storeDataUnwrapped.id}/public?limit=50`,
-        { signal: AbortSignal.timeout(10000) }
-      );
-      if (productsRes.ok) {
-        const productsData = await productsRes.json();
-        const unwrapped = productsData.data || productsData;
-        products = Array.isArray(unwrapped) ? unwrapped : [];
-      }
-    }
-
-    return { store, products, error: null };
-  } catch (err: any) {
-    return { store: null, products: [], error: err.message || 'Connection failed' };
-  }
+function getFirstImage(images: unknown): string | undefined {
+  return Array.isArray(images) && typeof images[0] === 'string' ? images[0] : undefined;
 }
 
 export default async function StorePage({ params }: { params: { slug: string } }) {
   const slug = params.slug;
-  const { store, products, error } = await fetchStoreData(slug);
+  const result = await fetchStoreData(slug);
 
-  if (!store) {
+  if (result.status === 'not_found') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#03045E' }}>
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-extrabold text-white mb-3">
+            Tienda no encontrada
+          </h1>
+          <p className="text-[rgba(255,255,255,0.5)] mb-6">
+            Revisa el enlace o vuelve al inicio para explorar SarahBits.
+          </p>
+          <Link
+            href="/"
+            className="inline-flex px-6 py-3 rounded-full border border-[rgba(255,255,255,0.2)] text-white font-semibold hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+          >
+            Volver al inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (result.status === 'unavailable') {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#03045E' }}>
         <div className="text-center max-w-md">
@@ -89,15 +60,17 @@ export default async function StorePage({ params }: { params: { slug: string } }
               Volver al inicio
             </Link>
           </div>
-          {error && (
+          {result.error && (
             <p className="text-xs text-[rgba(255,255,255,0.3)] mt-6">
-              Error: {error}
+              Error: {result.error}
             </p>
           )}
         </div>
       </div>
     );
   }
+
+  const { store, products } = result;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -113,7 +86,7 @@ export default async function StorePage({ params }: { params: { slug: string } }
           '@type': 'Product',
           name: p.title,
           description: p.description || '',
-          ...(p.imageUrl || (p.images?.[0]) ? { image: p.imageUrl || (Array.isArray(p.images) ? p.images[0] : '') } : {}),
+          ...(p.imageUrl || getFirstImage(p.images) ? { image: p.imageUrl || getFirstImage(p.images) } : {}),
         },
         price: Number(p.price),
         priceCurrency: 'COP',
