@@ -16,6 +16,6 @@ describe('Footer', () => {
     for (const link of mockFooterLegalLinks) {
       expect(screen.getByRole('link', { name: new RegExp(link.label, 'i') })).toBeTruthy();
     }
-    expect(screen.getAllByText(/marca®/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sarahbits/i).length).toBeGreaterThan(0);
   });
 });

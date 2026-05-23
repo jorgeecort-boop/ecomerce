@@ -6,7 +6,8 @@ describe('Header', () => {
     render(<Header />);
 
     expect(screen.getByRole('link', { name: /inicio/i })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /maquinas/i })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /audio/i })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /gaming/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /buscar/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /carrito/i })).toBeTruthy();
   });

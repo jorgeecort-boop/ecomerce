@@ -50,8 +50,8 @@ describe('CategoryGrid', () => {
       expect(mockedGetHomeProducts).toHaveBeenCalledWith(4);
     });
 
-    const cards = await screen.findAllByTestId('category-card');
-    expect(cards).toHaveLength(2);
+    await screen.findByRole('link', { name: /cafe blend 1/i });
+    expect(screen.getAllByRole('link', { name: /cafe blend/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /cafe blend 1/i })).toBeTruthy();
     expect(screen.queryByText(/no pudimos cargar/i)).toBeNull();
   });
@@ -63,6 +63,6 @@ describe('CategoryGrid', () => {
 
     const error = await screen.findByText(/no pudimos cargar los productos/i);
     expect(error).toBeTruthy();
-    expect(screen.queryByTestId('category-card')).toBeNull();
+    expect(screen.queryByRole('link', { name: /ver producto/i })).toBeNull();
   });
 });

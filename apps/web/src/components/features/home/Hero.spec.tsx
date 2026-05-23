@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Hero } from './Hero';
 
 jest.mock('next/image', () => ({
@@ -24,30 +24,22 @@ describe('Hero', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: /por tiempo limitado, consigue tu maquina por solo \$159\./i,
+        name: /tecnologia que transforma tu setup/i,
       })
     ).toBeTruthy();
-    expect(screen.getByText(/requiere una compra inicial de 3 cajas/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /reclamar oferta/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /ver como funciona/i })).toBeTruthy();
-    expect(screen.getByAltText(/persona disfrutando cafe/i)).toBeTruthy();
+    expect(screen.getByText(/los mejores gadgets al mejor precio/i)).toBeTruthy();
+    expect(screen.getByRole('link', { name: /explorar tienda/i })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /ver ofertas/i })).toBeTruthy();
   });
 
-  it('calls the action handlers when the ctas are clicked', () => {
-    const onPrimaryAction = jest.fn();
-    const onSecondaryAction = jest.fn();
+  it('links both ctas to the demo store', () => {
+    render(<Hero />);
 
-    render(
-      <Hero
-        onPrimaryAction={onPrimaryAction}
-        onSecondaryAction={onSecondaryAction}
-      />
+    expect(screen.getByRole('link', { name: /explorar tienda/i }).getAttribute('href')).toBe(
+      '/store/tienda-demo'
     );
-
-    fireEvent.click(screen.getByRole('button', { name: /reclamar oferta/i }));
-    fireEvent.click(screen.getByRole('button', { name: /ver como funciona/i }));
-
-    expect(onPrimaryAction).toHaveBeenCalledTimes(1);
-    expect(onSecondaryAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('link', { name: /ver ofertas/i }).getAttribute('href')).toBe(
+      '/store/tienda-demo'
+    );
   });
 });
