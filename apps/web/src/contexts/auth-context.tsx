@@ -30,10 +30,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ── Cookie helpers ──────────────────────────────────────────────────────────
 function setTokenCookie(token: string) {
-  document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
+  try { document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`; } catch { /* ignore */ }
 }
 function clearTokenCookie() {
-  document.cookie = 'token=; path=/; max-age=0; SameSite=Lax';
+  try { document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'; } catch { /* ignore */ }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -42,14 +42,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Safe localStorage wrapper ──────────────────────────────────────────
+  const safeLocalStorage = {
+    getItem: (key: string) => {
+      try { return localStorage.getItem(key); } catch { return null; }
+    },
+    setItem: (key: string, value: string) => {
+      try { localStorage.setItem(key, value); } catch { /* ignore */ }
+    },
+    removeItem: (key: string) => {
+      try { localStorage.removeItem(key); } catch { /* ignore */ }
+    },
+  };
+
   // ── Save tokens helper ──────────────────────────────────────────────────
   const saveAuth = useCallback(
     (data: { accessToken: string; refreshToken: string; user: { id: string; email: string } }) => {
       setToken(data.accessToken);
       setUser(data.user);
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      safeLocalStorage.setItem('token', data.accessToken);
+      safeLocalStorage.setItem('refreshToken', data.refreshToken);
+      safeLocalStorage.setItem('user', JSON.stringify(data.user));
       setTokenCookie(data.accessToken);
       scheduleRefresh();
     },
@@ -64,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Access token is 15m = 900s. Refresh at 13m = 780s.
     refreshTimerRef.current = setTimeout(
       async () => {
-        const rt = localStorage.getItem('refreshToken');
+        const rt = safeLocalStorage.getItem('refreshToken');
         if (!rt) return;
 
         try {
@@ -77,51 +90,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (res.ok) {
             const data = await res.json();
             const tokens = data.data || data;
-            // Save without re-triggering scheduleRefresh inside saveAuth
             setToken(tokens.accessToken);
-            localStorage.setItem('token', tokens.accessToken);
-            localStorage.setItem('refreshToken', tokens.refreshToken);
+            safeLocalStorage.setItem('token', tokens.accessToken);
+            safeLocalStorage.setItem('refreshToken', tokens.refreshToken);
             setTokenCookie(tokens.accessToken);
             scheduleRefresh(); // schedule next refresh
           } else {
-            // Refresh failed — user must re-login
             doLogout();
           }
         } catch {
-          // Network error — don't log out, just try again later
           refreshTimerRef.current = setTimeout(scheduleRefresh, 60_000);
         }
       },
       13 * 60 * 1000
-    ); // 13 minutes
+    );
   }, []);
 
   const doLogout = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    safeLocalStorage.removeItem('token');
+    safeLocalStorage.removeItem('refreshToken');
+    safeLocalStorage.removeItem('user');
     clearTokenCookie();
   }, []);
 
   // ── Init: restore session on mount ──────────────────────────────────────
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    try {
+      const storedToken = safeLocalStorage.getItem('token');
+      const storedUser = safeLocalStorage.getItem('user');
 
-    if (storedToken && storedUser && storedUser !== 'undefined') {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        setTokenCookie(storedToken);
-        scheduleRefresh();
-      } catch (e) {
-        doLogout();
+      if (storedToken && storedUser && storedUser !== 'undefined') {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setToken(storedToken);
+          setUser(parsedUser);
+          setTokenCookie(storedToken);
+          scheduleRefresh();
+        } catch {
+          doLogout();
+        }
       }
+    } catch {
+      // localStorage threw entirely; proceed without session
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
 
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
