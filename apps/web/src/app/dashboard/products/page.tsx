@@ -46,7 +46,8 @@ export default function ProductsPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Failed to load stores');
-        const data = await res.json();
+        const raw = await res.json();
+        const data = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
         setStores(data);
         if (data.length > 0) {
           setSelectedStore(data[0].id);

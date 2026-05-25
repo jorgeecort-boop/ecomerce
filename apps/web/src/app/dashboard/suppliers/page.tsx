@@ -49,7 +49,8 @@ export default function SuppliersPage() {
         }
 
         const json = await response.json();
-        const data = unwrapApiData<StoreOption[]>(json);
+        const raw = unwrapApiData<StoreOption[]>(json);
+        const data = Array.isArray(raw) ? raw : [];
         setStores(data);
         setStoreId((current) => current || data[0]?.id || '');
       } catch (err: any) {

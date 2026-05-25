@@ -56,8 +56,9 @@ export default function NewProductPage() {
     })
       .then((r) => r.json())
       .then((data) => {
-        setStores(data);
-        if (data.length > 0) setForm((f) => ({ ...f, storeId: data[0].id }));
+        const arr = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        setStores(arr);
+        if (arr.length > 0) setForm((f) => ({ ...f, storeId: arr[0].id }));
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoadingStores(false));
