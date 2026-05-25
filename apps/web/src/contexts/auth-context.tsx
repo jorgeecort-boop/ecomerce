@@ -144,56 +144,106 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [scheduleRefresh]);
 
-  // ── Login ────────────────────────────────────────────────────────────────
+  // ── Login (with retry for Render cold starts) ──────────────────────────
   const login = async (email: string, password: string) => {
-    try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const maxRetries = 3;
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: 'Login failed' }));
-        throw new Error(error.message || 'Login failed');
-      }
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
-      const json = await res.json();
-      saveAuth(json.data || json);
-    } catch (err: any) {
-      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        throw new Error(
-          `Cannot connect to API at ${API_URL}. Please check if the server is running.`
-        );
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ message: 'Login failed' }));
+          const message = error.message || 'Login failed';
+
+          const isServerUnavailable =
+            res.status === 502 || res.status === 503 || res.status === 504;
+          if (isServerUnavailable && attempt < maxRetries) {
+            await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+            continue;
+          }
+
+          throw new Error(message);
+        }
+
+        const json = await res.json();
+        saveAuth(json.data || json);
+        return;
+      } catch (err: any) {
+        const isNetworkError =
+          err.name === 'TypeError' &&
+          (err.message === 'Failed to fetch' || err.message.includes('NetworkError'));
+
+        if (isNetworkError && attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+          continue;
+        }
+
+        if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+          throw new Error(
+            `Cannot connect to API at ${API_URL}. Please check if the server is running.`
+          );
+        }
+        throw err;
       }
-      throw err;
     }
+
+    throw new Error('Login failed after multiple attempts');
   };
 
-  // ── Register ──────────────────────────────────────────────────────────────
+  // ── Register (with retry for Render cold starts) ──────────────────────
   const register = async (email: string, password: string, name?: string) => {
-    try {
-      const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-      });
+    const maxRetries = 3;
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: 'Registration failed' }));
-        throw new Error(error.message || 'Registration failed');
-      }
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
+        });
 
-      const json = await res.json();
-      saveAuth(json.data || json);
-    } catch (err: any) {
-      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        throw new Error(
-          `Cannot connect to API at ${API_URL}. Please check if the server is running.`
-        );
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ message: 'Registration failed' }));
+          const message = error.message || 'Registration failed';
+
+          const isServerUnavailable =
+            res.status === 502 || res.status === 503 || res.status === 504;
+          if (isServerUnavailable && attempt < maxRetries) {
+            await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+            continue;
+          }
+
+          throw new Error(message);
+        }
+
+        const json = await res.json();
+        saveAuth(json.data || json);
+        return;
+      } catch (err: any) {
+        const isNetworkError =
+          err.name === 'TypeError' &&
+          (err.message === 'Failed to fetch' || err.message.includes('NetworkError'));
+
+        if (isNetworkError && attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+          continue;
+        }
+
+        if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+          throw new Error(
+            `Cannot connect to API at ${API_URL}. Please check if the server is running.`
+          );
+        }
+        throw err;
       }
-      throw err;
     }
+
+    throw new Error('Registration failed after multiple attempts');
   };
 
   return (

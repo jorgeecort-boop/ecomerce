@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -9,14 +9,18 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('Signing in...');
   const [error, setError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setLoadingText('Signing in...');
+    loadingTimerRef.current = setTimeout(() => setLoadingText('Waking up servers...'), 5000);
 
     try {
       await login(email, password);
@@ -24,6 +28,7 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       setLoading(false);
     }
   };
@@ -83,7 +88,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? loadingText : 'Sign In'}
           </button>
         </form>
 
