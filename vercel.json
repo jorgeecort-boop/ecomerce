@@ -3,6 +3,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build --workspace=apps/web",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "npm install && npx prisma generate --schema=packages/db/prisma/schema.prisma",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/web packages"
+  "installCommand": "npm install && npx prisma generate --schema=packages/db/prisma/schema.prisma"
 }
