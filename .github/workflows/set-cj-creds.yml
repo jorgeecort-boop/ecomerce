@@ -1,0 +1,80 @@
+name: Set CJ Credentials on Render
+
+on:
+  workflow_dispatch:
+    inputs:
+      cj_email:
+        description: 'CJ Dropshipping Email'
+        required: true
+        type: string
+      cj_api_key:
+        description: 'CJ Dropshipping API Key'
+        required: true
+        type: string
+
+jobs:
+  set-env:
+    name: Set CJ Env Vars + Deploy
+    runs-on: ubuntu-latest
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+    steps:
+      - name: Set CJ_API_EMAIL on Render
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/env-vars/CJ_API_EMAIL" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"value\":\"${{ inputs.cj_email }}\"}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "Set CJ_API_EMAIL: HTTP $HTTP_CODE"
+          echo "Response: $BODY"
+
+      - name: Set CJ_API_KEY on Render
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/env-vars/CJ_API_KEY" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"value\":\"${{ inputs.cj_api_key }}\"}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "Set CJ_API_KEY: HTTP $HTTP_CODE"
+          echo "Response: $BODY"
+
+      - name: Trigger Render Deploy
+        run: |
+          DEPLOY=$(curl -s -X POST \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":"clear"}')
+          echo "Deploy triggered: $(echo $DEPLOY | grep -o '"id":"[^"]*"' | head -1)"
+
+      - name: Wait and verify health
+        run: |
+          echo "Waiting 120s for Render deploy startup..."
+          sleep 120
+          
+          max_attempts=24
+          delay_seconds=15
+          API_HEALTH_URL="https://ecomerce-api-zulc.onrender.com/api/health"
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            STATUS=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 "$API_HEALTH_URL") || STATUS="000"
+            echo "Health check attempt ${attempt}/${max_attempts}: status=${STATUS}"
+            
+            if [ "$STATUS" = "200" ]; then
+              echo "API health check passed. Deploy successful!"
+              exit 0
+            fi
+
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              sleep "$delay_seconds"
+            fi
+          done
+
+          echo "Health check failed after $max_attempts attempts."
+          exit 1
