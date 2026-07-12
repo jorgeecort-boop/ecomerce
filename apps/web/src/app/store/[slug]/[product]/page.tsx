@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import Script from 'next/script';
 import ProductClient from './ProductClient';
 import { generateProductMetadata } from './seo';
@@ -84,18 +83,18 @@ export default async function ProductPage({
             Nuestros servidores estan en modo ahorro de energia. Vuelve a intentarlo en unos segundos.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => window.location.reload()}
+            <a
+              href={`/store/${slug}/${productId}`}
               className="px-6 py-3 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors"
             >
               Reintentar
-            </button>
-            <Link
+            </a>
+            <a
               href="/"
               className="px-6 py-3 rounded-full border-2 border-slate-200 text-slate-600 font-semibold hover:border-slate-300 transition-colors"
             >
               Volver al inicio
-            </Link>
+            </a>
           </div>
         </div>
       </div>

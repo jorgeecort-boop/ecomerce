@@ -5,14 +5,14 @@ import * as THREE from 'three';
 import { ArrowRight } from 'lucide-react';
 
 const products = [
-  { name: 'Mini Proyector LED Portátil 4K', price: 320000, oldPrice: 420000, discount: 24, image: '/kimi-assets/images/product-1.jpg' },
-  { name: 'Traductor de Idiomas Portátil', price: 189000, oldPrice: 250000, discount: 24, image: '/kimi-assets/images/product-2.jpg' },
-  { name: 'Kit Ring Light 26cm con Trípode 2m', price: 145000, oldPrice: 199900, discount: 27, image: '/kimi-assets/images/product-3.jpg' },
-  { name: 'Soporte Aluminio Ajustable Laptop/Tablet', price: 35000, oldPrice: 55000, discount: 36, image: '/kimi-assets/images/product-4.jpg' },
-  { name: 'Lámpara LED RGB de Escritorio', price: 79900, oldPrice: 109900, discount: 27, image: '/kimi-assets/images/product-5.jpg' },
-  { name: 'Cámara Web 4K USB con Micrófono', price: 119900, oldPrice: 169900, discount: 29, image: '/kimi-assets/images/product-6.jpg' },
-  { name: 'Mouse Gamer Inalámbrico RGB 7200 DPI', price: 79900, oldPrice: 119900, discount: 33, image: '/kimi-assets/images/product-1.jpg' },
-  { name: 'Power Bank 20000mAh PD 22.5W', price: 110000, oldPrice: 150000, discount: 27, image: '/kimi-assets/images/product-2.jpg' },
+  { name: 'Mini Proyector LED Portátil 4K', price: 320000, oldPrice: 420000, discount: 24, image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800' },
+  { name: 'Traductor de Idiomas Portátil', price: 189000, oldPrice: 250000, discount: 24, image: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=800' },
+  { name: 'Kit Ring Light 26cm con Trípode 2m', price: 145000, oldPrice: 199900, discount: 27, image: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=800' },
+  { name: 'Soporte Aluminio Ajustable Laptop/Tablet', price: 35000, oldPrice: 55000, discount: 36, image: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800' },
+  { name: 'Lámpara LED RGB de Escritorio', price: 79900, oldPrice: 109900, discount: 27, image: 'https://images.unsplash.com/photo-1565636192335-fd1de27e3f93?w=800' },
+  { name: 'Cámara Web 4K USB con Micrófono', price: 119900, oldPrice: 169900, discount: 29, image: 'https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=800' },
+  { name: 'Mouse Gamer Inalámbrico RGB 7200 DPI', price: 79900, oldPrice: 119900, discount: 33, image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800' },
+  { name: 'Power Bank 20000mAh PD 22.5W', price: 110000, oldPrice: 150000, discount: 27, image: 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=800' },
 ];
 
 const CARD_WIDTH = 2.8;

@@ -5,16 +5,18 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/contexts/auth-context';
+import { api } from '@ecomerce/utils';
 
 import StoreNavigation from '@/components/features/kimi-store/StoreNavigation';
 import StoreHero from '@/components/features/kimi-store/StoreHero';
 import CategoryPills from '@/components/features/kimi-store/CategoryPills';
 import ProductGrid from '@/components/features/kimi-store/ProductGrid';
 import QuickViewModal from '@/components/features/kimi-store/QuickViewModal';
-import CartDrawer from '@/components/features/kimi-store/CartDrawer';
+import CartDrawer from '@/components/shared/CartDrawer';
 import WishlistDrawer from '@/components/features/kimi-store/WishlistDrawer';
 import NewsletterSection from '@/components/features/kimi-store/NewsletterSection';
-import StoreFooter from '@/components/features/kimi-store/StoreFooter';
+import Footer from '@/components/shared/Footer';
 import ScrollProgressBar from '@/components/features/kimi-store/ScrollProgressBar';
 import ScrollToTopButton from '@/components/features/kimi-store/ScrollToTopButton';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -50,6 +52,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
+  const { user, token } = useAuth();
   const { currency, format } = useCurrency();
   const { cart: cartItems, addItem, updateQuantity, removeItem } = useCart(store.slug);
 
@@ -59,18 +62,31 @@ export default function StoreClient({ store, products }: StoreClientProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Load wishlist from localStorage
+  // Load wishlist from localStorage (anonymous) or backend (logged in)
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`wishlist-${store.slug}`);
-      if (saved) setWishlistIds(new Set(JSON.parse(saved)));
-    } catch {}
-  }, [store.slug]);
+    if (token && user) {
+      api.wishlist.get(token, store.id).then((data) => {
+        const ids = (data.items || []).map((i: any) => i.productId);
+        setWishlistIds(new Set(ids));
+      }).catch(() => {
+        try {
+          const saved = localStorage.getItem(`wishlist-${store.slug}`);
+          if (saved) setWishlistIds(new Set(JSON.parse(saved)));
+        } catch {}
+      });
+    } else {
+      try {
+        const saved = localStorage.getItem(`wishlist-${store.slug}`);
+        if (saved) setWishlistIds(new Set(JSON.parse(saved)));
+      } catch {}
+    }
+  }, [token, user, store.id, store.slug]);
 
-  // Persist wishlist
+  // Persist wishlist to localStorage (anonymous) or backend (logged in)
   useEffect(() => {
+    if (token && user) return; // don't persist locally when logged in
     localStorage.setItem(`wishlist-${store.slug}`, JSON.stringify([...wishlistIds]));
-  }, [wishlistIds, store.slug]);
+  }, [wishlistIds, store.slug, token, user]);
 
   const addToast = useCallback((message: string, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -159,18 +175,34 @@ export default function StoreClient({ store, products }: StoreClientProps) {
   }, [addItem, addToast]);
 
   const handleToggleWishlist = useCallback((product: any) => {
+    const isAdding = !wishlistIds.has(product.id);
+
+    // Optimistic UI update
     setWishlistIds((prev) => {
       const next = new Set(prev);
-      if (next.has(product.id)) {
-        next.delete(product.id);
-        addToast('Eliminado de favoritos', 'info');
-      } else {
+      if (isAdding) {
         next.add(product.id);
-        addToast('❤️ Agregado a favoritos', 'success');
+      } else {
+        next.delete(product.id);
       }
       return next;
     });
-  }, [addToast]);
+
+    addToast(isAdding ? '❤️ Agregado a favoritos' : 'Eliminado de favoritos', isAdding ? 'success' : 'info');
+
+    // Sync with backend if logged in
+    if (token && user) {
+      if (isAdding) {
+        api.wishlist.addItem(token, store.id, product.id).catch(() => {
+          setWishlistIds((prev) => { const n = new Set(prev); n.delete(product.id); return n; });
+        });
+      } else {
+        api.wishlist.removeItem(token, store.id, product.id).catch(() => {
+          setWishlistIds((prev) => { const n = new Set(prev); n.add(product.id); return n; });
+        });
+      }
+    }
+  }, [wishlistIds, addToast, token, user, store.id]);
 
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => prev + 12);
@@ -290,7 +322,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
       </main>
 
       {/* Footer */}
-      <StoreFooter />
+      <Footer />
 
       {/* Drawers & Modals */}
       <QuickViewModal
@@ -329,6 +361,9 @@ export default function StoreClient({ store, products }: StoreClientProps) {
             return next;
           });
           addToast('Eliminado de favoritos', 'info');
+          if (token && user) {
+            api.wishlist.removeItem(token, store.id, id).catch(() => {});
+          }
         }}
         storeSlug={store.slug}
       />

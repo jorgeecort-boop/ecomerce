@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import Script from 'next/script';
 import StoreClient from './StoreClient';
 import { fetchStoreData } from './data';
@@ -24,12 +23,12 @@ export default async function StorePage({ params }: { params: { slug: string } }
           <p className="text-[rgba(255,255,255,0.5)] mb-6">
             Revisa el enlace o vuelve al inicio para explorar SarahBits.
           </p>
-          <Link
+          <a
             href="/"
             className="inline-flex px-6 py-3 rounded-full border border-[rgba(255,255,255,0.2)] text-white font-semibold hover:bg-[rgba(255,255,255,0.08)] transition-colors"
           >
             Volver al inicio
-          </Link>
+          </a>
         </div>
       </div>
     );
@@ -53,12 +52,12 @@ export default async function StorePage({ params }: { params: { slug: string } }
             >
               Reintentar
             </a>
-            <Link
+            <a
               href="/"
               className="px-6 py-3 rounded-full border border-[rgba(255,255,255,0.2)] text-white font-semibold hover:bg-[rgba(255,255,255,0.08)] transition-colors"
             >
               Volver al inicio
-            </Link>
+            </a>
           </div>
           {result.error && (
             <p className="text-xs text-[rgba(255,255,255,0.3)] mt-6">

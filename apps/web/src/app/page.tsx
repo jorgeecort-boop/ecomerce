@@ -11,16 +11,16 @@ import StatsSection from '@/components/features/kimi-landing/StatsSection';
 import BenefitsSection from '@/components/features/kimi-landing/BenefitsSection';
 import TestimonialsSection from '@/components/features/kimi-landing/TestimonialsSection';
 import FlashSaleCTA from '@/components/features/kimi-landing/FlashSaleCTA';
-import Footer from '@/components/features/kimi-landing/Footer';
-import CartDrawer from '@/components/features/home/CartDrawer';
+import Footer from '@/components/shared/Footer';
+import CartDrawer from '@/components/shared/CartDrawer';
 import { useCart } from '@/hooks/useCart';
 
-const STORE_SLUG = 'tienda-demo';
+const STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG || 'tienda-demo';
 
 export default function HomePage() {
   useLenis();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { cartCount } = useCart(STORE_SLUG);
+  const { cart, cartCount, updateQuantity, removeItem } = useCart(STORE_SLUG);
 
   const handleCartClick = () => setIsCartOpen(true);
   const handleStoreClick = () => {
@@ -37,6 +37,9 @@ export default function HomePage() {
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
+        items={cart}
+        onUpdateQuantity={(id, delta) => updateQuantity(id, delta)}
+        onRemove={(id) => removeItem(id)}
         storeSlug={STORE_SLUG}
       />
       <main>

@@ -9,7 +9,7 @@ import {
   useRef,
   ReactNode,
 } from 'react';
-import { API_URL } from '@ecomerce/utils';
+import { API_URL, api } from '@ecomerce/utils';
 
 interface User {
   id: string;
@@ -172,6 +172,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const json = await res.json();
         saveAuth(json.data || json);
+
+        // Merge guest cart if exists
+        try {
+          const sessionId = safeLocalStorage.getItem('cartSessionId');
+          if (sessionId) {
+            const tokens = json.data || json;
+            api.cart.merge(tokens.accessToken || tokens.token, sessionId).catch(() => {});
+            safeLocalStorage.removeItem('cartSessionId');
+          }
+        } catch {}
+
         return;
       } catch (err: any) {
         const isNetworkError =
@@ -223,6 +234,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const json = await res.json();
         saveAuth(json.data || json);
+
+        // Merge guest cart if exists
+        try {
+          const sessionId = safeLocalStorage.getItem('cartSessionId');
+          if (sessionId) {
+            const tokens = json.data || json;
+            api.cart.merge(tokens.accessToken || tokens.token, sessionId).catch(() => {});
+            safeLocalStorage.removeItem('cartSessionId');
+          }
+        } catch {}
+
         return;
       } catch (err: any) {
         const isNetworkError =

@@ -8,12 +8,12 @@ import { ArrowRight, Headphones, Gamepad2, Watch, Video, Lightbulb, Cable } from
 gsap.registerPlugin(ScrollTrigger);
 
 const categories = [
-  { name: 'Audio', image: '/kimi-assets/images/category-audio.jpg', icon: Headphones, count: 86, colSpan: 'col-span-2 row-span-2', aspect: 'aspect-square' },
-  { name: 'Gaming', image: '/kimi-assets/images/category-gaming.jpg', icon: Gamepad2, count: 64, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
-  { name: 'Wearables', image: '/kimi-assets/images/category-wearables.jpg', icon: Watch, count: 42, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
-  { name: 'Streaming', image: '/kimi-assets/images/category-streaming.jpg', icon: Video, count: 38, colSpan: 'col-span-2 row-span-1', aspect: 'aspect-[2/1]' },
-  { name: 'Iluminación', image: '/kimi-assets/images/category-iluminacion.jpg', icon: Lightbulb, count: 55, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
-  { name: 'Conectividad', image: '/kimi-assets/images/category-conectividad.jpg', icon: Cable, count: 71, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
+  { name: 'Audio', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800', icon: Headphones, count: 86, colSpan: 'col-span-2 row-span-2', aspect: 'aspect-square' },
+  { name: 'Gaming', image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800', icon: Gamepad2, count: 64, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
+  { name: 'Wearables', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800', icon: Watch, count: 42, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
+  { name: 'Streaming', image: 'https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=800', icon: Video, count: 38, colSpan: 'col-span-2 row-span-1', aspect: 'aspect-[2/1]' },
+  { name: 'Iluminación', image: 'https://images.unsplash.com/photo-1565636192335-fd1de27e3f93?w=800', icon: Lightbulb, count: 55, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
+  { name: 'Conectividad', image: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=800', icon: Cable, count: 71, colSpan: 'col-span-1 row-span-1', aspect: 'aspect-square' },
 ];
 
 export default function CategoryGrid() {
