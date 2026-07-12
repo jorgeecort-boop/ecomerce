@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+const shouldRunStoreE2E = process.env.CI === 'true' || process.env.RUN_STORE_E2E === 'true';
+
 test.describe('Checkout Step Transition', () => {
+  test.skip(!shouldRunStoreE2E, 'Checkout route requires store API access; set RUN_STORE_E2E=true to run locally');
+
   test('moves from Shipping (step 2) to Payment (step 3)', async ({ page }) => {
     await page.route('**/stores/slug/test-store', async (route) => {
       await route.fulfill({

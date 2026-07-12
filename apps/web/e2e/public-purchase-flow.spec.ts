@@ -5,6 +5,8 @@ const PRODUCT_ID = process.env.E2E_PRODUCT_ID || 'cmogce3ds000jeqaeyvvnzapz';
 const PRODUCT_NAME =
   process.env.E2E_PRODUCT_NAME || 'Kit Ring Light 26cm con Tripode 2m para Streaming';
 const API_URL = process.env.API_URL || 'https://ecomerce-api-zulc.onrender.com/api';
+const shouldRunPurchaseE2E =
+  Boolean(process.env.BASE_URL) || process.env.RUN_PURCHASE_E2E === 'true';
 
 async function warmApi(request: APIRequestContext) {
   for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -19,6 +21,8 @@ async function warmApi(request: APIRequestContext) {
 }
 
 test.describe('Public purchase flow', () => {
+  test.skip(!shouldRunPurchaseE2E, 'Public purchase flow requires production API access');
+
   test('navigates store to product, adds to cart, and reaches checkout with order summary', async ({
     page,
     request,

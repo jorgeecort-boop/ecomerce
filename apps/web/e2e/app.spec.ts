@@ -1,16 +1,20 @@
 import { test, expect } from '@playwright/test';
 
+const shouldRunStoreE2E = process.env.CI === 'true' || process.env.RUN_STORE_E2E === 'true';
+
 test.describe('Landing Page', () => {
   test('should load the landing page', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/Ecomerce/);
-    await expect(page.getByText(/dropshipping empire/i)).toBeVisible();
+    await expect(page.getByRole('link', { name: 'SarahBits' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /transforma tu setup/i })).toBeVisible();
   });
 
   test('should have navigation links', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /login/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /get started/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /productos/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /ofertas/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /ver tienda/i })).toBeVisible();
   });
 });
 
@@ -78,8 +82,12 @@ test.describe('Dashboard', () => {
 });
 
 test.describe('Store Front', () => {
+  test.skip(!shouldRunStoreE2E, 'Store routes require API access; set RUN_STORE_E2E=true to run locally');
+
   test('should show 404 for non-existent store', async ({ page }) => {
     await page.goto('/store/non-existent-store');
-    await expect(page.getByText(/store not found/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /tienda no encontrada|la tienda se esta despertando/i })
+    ).toBeVisible();
   });
 });

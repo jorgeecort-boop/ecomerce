@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { AuthenticatedHelpers } from './authenticated-helpers';
 
 test.describe('Authenticated Checkout Flow', () => {
+  test.skip(!process.env.E2E_SEED_TOKEN, 'E2E_SEED_TOKEN is required for authenticated production flows');
+
   test.beforeEach(async ({ page }) => {
     // Login as customer - assuming test customer user exists
     await AuthenticatedHelpers.loginAsCustomer(page);
