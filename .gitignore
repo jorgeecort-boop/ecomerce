@@ -38,6 +38,14 @@ screenshots/
 resp*.txt
 cj_resp.txt
 
+# dev guides (not for production)
+CJ_DROPSHIPPING_GUIDE.md
+QUICK_START_CJ.md
+
+# dev-only scripts (utilities, not production code)
+scripts/
+apps/api/scripts/
+
 # turbo
 .turbo/
 

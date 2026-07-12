@@ -78,8 +78,8 @@ describe('HomePage integration', () => {
 
     render(<HomePage />);
 
-    expect(screen.getByRole('link', { name: /sarahbits/i })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /productos/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /sarahbits/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /productos/i })).toBeTruthy();
     expect(screen.getByRole('contentinfo')).toBeTruthy();
     expect(screen.getByRole('heading', { name: /transforma tu setup/i })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /productos m.s vendidos/i })).toBeTruthy();
