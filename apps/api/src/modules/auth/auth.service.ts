@@ -12,6 +12,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { TokenResponse } from './dto/token-response.dto';
 import { EmailValidationService } from './email-validation.service';
+import { EmailService } from '../../common/email.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +21,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailValidation: EmailValidationService,
+    private emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto): Promise<TokenResponse> {
@@ -100,6 +102,62 @@ export class AuthService {
       refreshToken,
       user: { id: userId, email },
     };
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      return { message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' };
+    }
+
+    const resetToken = this.jwtService.sign(
+      { sub: user.id, purpose: 'password-reset' },
+      { secret: this.configService.get('JWT_SECRET') || 'secret', expiresIn: '1h' },
+    );
+
+    const webUrl = this.configService.get('WEB_URL') || 'http://localhost:3000';
+    const resetUrl = `${webUrl}/reset-password?token=${resetToken}`;
+
+    await this.emailService.send({
+      to: email,
+      subject: 'Restablece tu contraseña - Ecomerce',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+          <h2 style="color:#03045E;">Restablecer contraseña</h2>
+          <p style="color:#333;">Haz clic en el botón para restablecer tu contraseña:</p>
+          <a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#00B4D8;color:white;text-decoration:none;border-radius:8px;font-weight:bold;">
+            Restablecer contraseña
+          </a>
+          <p style="color:#888;font-size:12px;margin-top:16px;">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este mensaje.</p>
+        </div>
+      `,
+    });
+
+    return { message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    let payload: { sub: string; purpose: string };
+    try {
+      payload = this.jwtService.verify(token, {
+        secret: this.configService.get('JWT_SECRET') || 'secret',
+      });
+    } catch {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+
+    if (payload.purpose !== 'password-reset') {
+      throw new BadRequestException('Token inválido');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await this.usersService.update(payload.sub, { password: hashedPassword } as any);
+
+    return { message: 'Contraseña restablecida exitosamente' };
+  }
+
+  async validateToken(userId: string) {
+    return this.validateUser(userId);
   }
 
   async validateUser(userId: string) {

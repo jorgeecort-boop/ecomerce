@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/reset-password.dto';
 import { TokenResponse } from './dto/token-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -41,20 +42,23 @@ export class AuthController {
   }
 
   @Get('validate')
-  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Validate access token' })
+  async validate(@Req() req: any) {
+    return this.authService.validateToken(req.user.id);
+  }
+
+  @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Validate an access token' })
-  @ApiResponse({ status: 200, description: 'Token is valid' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
-  validate(@Req() req: { user: { id: string; email: string; name?: string } }) {
-    return {
-      valid: true,
-      user: {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.name,
-      },
-    };
+  @ApiOperation({ summary: 'Send password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 }

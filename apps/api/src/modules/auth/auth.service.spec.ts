@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { EmailValidationService } from './email-validation.service';
+import { EmailService } from '../../common/email.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -19,6 +20,7 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     };
 
     jwtService = {
@@ -42,6 +44,10 @@ describe('AuthService', () => {
       validate: jest.fn().mockResolvedValue({ valid: true }),
     };
 
+    const emailService = {
+      sendEmail: jest.fn().mockResolvedValue({ id: 'email-1' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -49,6 +55,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configService },
         { provide: EmailValidationService, useValue: emailValidation },
+        { provide: EmailService, useValue: emailService },
       ],
     }).compile();
 
