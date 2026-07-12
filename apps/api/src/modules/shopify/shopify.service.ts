@@ -52,23 +52,56 @@ export interface ShopifyLocation {
 export class ShopifyService {
   private readonly logger = new Logger(ShopifyService.name);
   private readonly storeUrl: string;
-  private readonly apiKey: string;
-  private readonly accessToken: string;
+  private readonly clientId: string;
+  private readonly clientSecret: string;
+  private readonly shop: string;
+  private accessToken: string | null = null;
+  private tokenExpiresAt = 0;
 
   constructor(private config: ConfigService) {
     this.storeUrl = this.config.get('SHOPIFY_STORE_URL') || '';
-    this.apiKey = this.config.get('SHOPIFY_API_KEY') || '';
-    this.accessToken = this.config.get('SHOPIFY_ACCESS_TOKEN') || '';
+    this.clientId = this.config.get('SHOPIFY_API_KEY') || '';
+    this.clientSecret = this.config.get('SHOPIFY_API_SECRET') || '';
+    this.shop = this.storeUrl.replace('.myshopify.com', '');
+  }
+
+  private async getAccessToken(): Promise<string> {
+    if (this.accessToken && Date.now() < this.tokenExpiresAt - 60_000) {
+      return this.accessToken;
+    }
+
+    const response = await fetch(`https://${this.storeUrl}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      this.logger.error(`Shopify OAuth token request failed: ${response.status} - ${text}`);
+      throw new Error(`Shopify OAuth token request failed: ${response.status}`);
+    }
+
+    const { access_token, expires_in } = await response.json();
+    this.accessToken = access_token;
+    this.tokenExpiresAt = Date.now() + (expires_in || 86400) * 1000;
+    this.logger.log('Shopify OAuth token refreshed');
+    return access_token;
   }
 
   private async shopifyFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `https://${this.storeUrl}/admin/api/2024-01${endpoint}`;
+    const token = await this.getAccessToken();
 
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': this.accessToken,
+        'X-Shopify-Access-Token': token,
         ...options.headers,
       },
     });

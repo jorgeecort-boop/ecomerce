@@ -3,6 +3,7 @@ import { PrismaService } from '../../config/prisma.service';
 import { MercadoPagoService } from './mercado-pago.service';
 import { TelegramService } from '../../common/telegram.service';
 import { EmailService } from '../../common/email.service';
+import { AutoFulfillmentService } from '../shopify/auto-fulfillment.service';
 
 @Injectable()
 export class PaymentsService {
@@ -12,7 +13,8 @@ export class PaymentsService {
     private prisma: PrismaService,
     private mercadoPagoService: MercadoPagoService,
     private telegram: TelegramService,
-    private email: EmailService
+    private email: EmailService,
+    private autoFulfillment: AutoFulfillmentService,
   ) {}
 
   async handlePaymentNotification(data: any) {
@@ -77,6 +79,11 @@ export class PaymentsService {
           Number(order.total),
           payment_method_id || 'mercadopago'
         );
+
+        // Trigger auto-fulfillment in background (don't block webhook response)
+        this.autoFulfillment.fulfillStoreOrder(order.id).catch((err) => {
+          this.logger.error(`Auto-fulfillment failed for order ${order.id}:`, err);
+        });
 
         if (order.customerEmail) {
           const ship = (order.shippingAddress as Record<string, unknown> | null) ?? null;

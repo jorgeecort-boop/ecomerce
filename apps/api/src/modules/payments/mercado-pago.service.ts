@@ -52,6 +52,7 @@ export class MercadoPagoService {
         pending: `${webUrl}/store/${storeSlug}/checkout/pending`,
       },
       notification_url: this.webhookUrl,
+      external_reference: metadata?.orderNumber || '',
       ...(isProduction && { auto_return: 'approved' }),
       metadata: {
         ...metadata,

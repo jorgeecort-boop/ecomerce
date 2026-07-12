@@ -4,6 +4,7 @@ import { PrismaService } from '../../config/prisma.service';
 import { MercadoPagoService } from './mercado-pago.service';
 import { TelegramService } from '../../common/telegram.service';
 import { EmailService } from '../../common/email.service';
+import { AutoFulfillmentService } from '../shopify/auto-fulfillment.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -41,6 +42,10 @@ describe('PaymentsService', () => {
     sendOrderConfirmation: jest.fn().mockResolvedValue(true),
   };
 
+  const mockAutoFulfillment = {
+    fulfillStoreOrder: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +54,7 @@ describe('PaymentsService', () => {
         { provide: MercadoPagoService, useValue: mockMercadoPago },
         { provide: TelegramService, useValue: mockTelegram },
         { provide: EmailService, useValue: mockEmail },
+        { provide: AutoFulfillmentService, useValue: mockAutoFulfillment },
       ],
     }).compile();
 

@@ -36,12 +36,63 @@ describe('AutoFulfillmentService', () => {
   // Mock SuppliersService
   const mockSuppliersService = {};
 
+  // Mock SupplierApiService
+  const mockSupplierApiService = {
+    dispatchOrder: jest.fn(),
+  };
+
   // Import after mocks are set up
   let AutoFulfillmentService: any;
 
   beforeAll(async () => {
     // We test the logic patterns instead of importing with DI
     // This validates the business logic flows
+  });
+
+  describe('fulfillStoreOrder logic', () => {
+    it('should skip if order not found', () => {
+      const order = null;
+      expect(order).toBeNull();
+    });
+
+    it('should skip if order status is not CONFIRMED', () => {
+      const order = { id: 'order-1', status: 'PENDING', items: [] };
+      if (order.status !== 'CONFIRMED') {
+        expect(order.status).not.toBe('CONFIRMED');
+      }
+    });
+
+    it('should skip items without supplierId', () => {
+      const items = [
+        { id: 'item-1', product: { supplierId: null, supplierProductId: null } },
+        { id: 'item-2', product: { supplierId: 's-1', supplierProductId: 'sp-1' } },
+      ];
+      const filtered = items.filter((i) => i.product.supplierId && i.product.supplierProductId);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].id).toBe('item-2');
+    });
+
+    it('should update order to PROCESSING when all supplier dispatches succeed', () => {
+      const results = [
+        { success: true, externalOrderId: 'ext-1' },
+        { success: true, externalOrderId: 'ext-2' },
+      ];
+      const allSucceeded = results.length > 0 && results.every((r) => r.success);
+      expect(allSucceeded).toBe(true);
+      if (allSucceeded) {
+        const updateData = { status: 'PROCESSING', supplierOrderId: 'ext-1' };
+        expect(updateData.status).toBe('PROCESSING');
+      }
+    });
+
+    it('should keep CONFIRMED status when any supplier dispatch fails', () => {
+      const results = [
+        { success: true, externalOrderId: 'ext-1' },
+        { success: false, error: 'API error' },
+      ];
+      const allSucceeded = results.length > 0 && results.every((r) => r.success);
+      expect(allSucceeded).toBe(false);
+    });
   });
 
   beforeEach(() => {

@@ -42,6 +42,7 @@ describe('ShopifyService', () => {
 
   describe('getOrders', () => {
     it('should return orders array', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -55,17 +56,19 @@ describe('ShopifyService', () => {
       const orders = await service.getOrders();
       expect(orders.length).toBe(2);
       expect(orders[0].order_number).toBe(1001);
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
         expect.stringContaining('/admin/api/2024-01/orders.json'),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'X-Shopify-Access-Token': 'shpat_test_token',
+            'X-Shopify-Access-Token': 'mock-token',
           }),
         }),
       );
     });
 
     it('should return empty array on API error', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
@@ -79,6 +82,7 @@ describe('ShopifyService', () => {
 
   describe('getProducts', () => {
     it('should return products array', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -96,6 +100,7 @@ describe('ShopifyService', () => {
 
   describe('getOrder', () => {
     it('should return single order', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -109,6 +114,7 @@ describe('ShopifyService', () => {
     });
 
     it('should return null on API error', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
@@ -122,6 +128,7 @@ describe('ShopifyService', () => {
 
   describe('fulfillOrder', () => {
     it('should send fulfillment request', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ fulfillment: { id: 1 } }),
@@ -129,13 +136,15 @@ describe('ShopifyService', () => {
 
       const result = await service.fulfillOrder(1001, 1, 'USPS', ['9400111899']);
       expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
         expect.stringContaining('/orders/1001/fulfillments.json'),
         expect.objectContaining({ method: 'POST' }),
       );
     });
 
     it('should return false on failure', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'mock-token', expires_in: 86400 }) });
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 422,
