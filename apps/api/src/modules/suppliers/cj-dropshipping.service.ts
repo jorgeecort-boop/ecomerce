@@ -1,21 +1,17 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface CJProduct {
   pid: string;
   productName: string;
   productNameEn?: string;
   description?: string;
-  sellPrice: number;
-  productWeight: number;
-  productUnit: string;
-  categoryId: string;
-  categoryName: string;
-  productImage: string;
+  sellPrice: number | string;
+  productWeight?: number;
+  productUnit?: string;
+  categoryId?: string;
+  categoryName?: string;
+  productImage?: string;
   productImages?: string[];
   variants?: CJVariant[];
   stocks?: CJStock[];
@@ -25,9 +21,9 @@ export interface CJVariant {
   vid: string;
   variantName: string;
   variantSku: string;
-  variantKey: string;
+  variantKey?: string;
   variantImage?: string;
-  variantSellPrice: number;
+  variantSellPrice: number | string;
   variantWeight?: number;
 }
 
@@ -60,80 +56,42 @@ export interface CJShippingRate {
   estimatedDeliveryDateMax: number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SERVICE
-// ─────────────────────────────────────────────────────────────────────────────
+interface CJAuthToken {
+  accessToken: string;
+  refreshToken?: string;
+}
 
-/**
- * CJDropshippingService
- *
- * Official API docs: https://developers.cjdropshipping.com/api2.0/v1
- * Registration: https://app.cjdropshipping.com → My Account → API
- *
- * Required env vars:
- *   CJ_API_KEY    — from your CJ account API page
- *   CJ_API_EMAIL  — the email of your CJ account
- *
- * Auth flow: POST /authentication/getAccessToken → returns accessToken (valid 6h)
- * The service caches the token and refreshes automatically on expiry.
- */
+interface CJApiEnvelope<T> {
+  code?: number | string;
+  result?: boolean | T;
+  message?: string;
+  data?: T;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
 @Injectable()
 export class CJDropshippingService {
   private readonly logger = new Logger(CJDropshippingService.name);
-  private readonly BASE_URL = 'https://developers.cjdropshipping.com/api2.0/v1';
+  private readonly baseUrl = 'https://developers.cjdropshipping.com/api2.0/v1';
 
-  // Token cache
+  private static readonly TOKEN_TTL_MS = 170 * 24 * 60 * 60 * 1000;
+  private static readonly TOKEN_REFRESH_SKEW_MS = 24 * 60 * 60 * 1000;
+  private static readonly MIN_REQUEST_INTERVAL_MS = 1100;
+  private static readonly MAX_ATTEMPTS = 3;
+
   private accessToken: string | null = null;
-  private tokenExpiry: number = 0;
+  private refreshToken: string | null = null;
+  private tokenExpiry = 0;
+  private nextRequestAt = 0;
 
-  constructor(private config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {}
 
-  // ── Authentication ──────────────────────────────────────────────────────────
-
-  /**
-   * Obtiene (o refresca) el access token de CJ Dropshipping.
-   * El token dura 6 horas. Se cachea en memoria.
-   */
-  private async getAccessToken(): Promise<string> {
-    const now = Date.now();
-    if (this.accessToken && now < this.tokenExpiry) {
-      return this.accessToken;
-    }
-
-    const email = this.config.get<string>('CJ_API_EMAIL');
-    const password = this.config.get<string>('CJ_API_KEY');
-
-    if (!email || !password) {
-      this.logger.warn('CJ_API_EMAIL or CJ_API_KEY not configured — using mock mode');
-      throw new Error('CJ Dropshipping API credentials not configured');
-    }
-
-    const res = await this.request<{ accessToken: string; refreshToken: string }>(
-      '/authentication/getAccessToken',
-      'POST',
-      { email, password },
-      false, // don't add auth header yet
-    );
-
-    this.accessToken = res.accessToken;
-    // Token valid for 6 hours, we refresh 10 minutes before expiry
-    this.tokenExpiry = now + (6 * 60 - 10) * 60 * 1000;
-
-    this.logger.log('CJ Dropshipping: access token refreshed');
-    return this.accessToken;
-  }
-
-  // ── Products ────────────────────────────────────────────────────────────────
-
-  /**
-   * Search products by keyword.
-   * Endpoint: GET /product/list
-   */
   async searchProducts(
     query: string,
     page = 1,
     pageSize = 20,
-    categoryId?: string,
+    categoryId?: string
   ): Promise<CJSearchResult> {
     const params = new URLSearchParams({
       productName: query,
@@ -157,71 +115,42 @@ export class CJDropshippingService {
     };
   }
 
-  /**
-   * Get full product details including all variants and images.
-   * Endpoint: GET /product/query
-   */
   async getProduct(pid: string): Promise<CJProduct | null> {
     try {
-      const data = await this.request<CJProduct>(
+      return await this.request<CJProduct>(
         `/product/query?pid=${encodeURIComponent(pid)}`,
-        'GET',
+        'GET'
       );
-      return data;
-    } catch (err) {
+    } catch (error) {
       this.logger.warn(`CJ product not found: ${pid}`);
       return null;
     }
   }
 
-  /**
-   * Get all categories to browse products.
-   * Endpoint: GET /product/getCategory
-   */
   async getCategories(): Promise<{ categoryId: string; categoryName: string }[]> {
     const data = await this.request<{ categoryId: string; categoryName: string }[]>(
       '/product/getCategory',
-      'GET',
+      'GET'
     );
     return data ?? [];
   }
 
-  // ── Shipping ─────────────────────────────────────────────────────────────────
-
-  /**
-   * Get available shipping methods and rates for a product.
-   * Endpoint: POST /logistic/freightCalculate
-   */
   async getShippingRates(
     pid: string,
     vid: string,
     quantity: number,
-    countryCode: string, // e.g. "US", "MX", "GB"
+    countryCode: string
   ): Promise<CJShippingRate[]> {
-    const data = await this.request<CJShippingRate[]>(
-      '/logistic/freightCalculate',
-      'POST',
-      {
-        pid,
-        vid,
-        quantity,
-        countryCode,
-        taxId: '',
-      },
-    );
+    const data = await this.request<CJShippingRate[]>('/logistic/freightCalculate', 'POST', {
+      pid,
+      vid,
+      quantity,
+      countryCode,
+      taxId: '',
+    });
     return data ?? [];
   }
 
-  // ── Orders ──────────────────────────────────────────────────────────────────
-
-  /**
-   * Create an order on CJ Dropshipping after the customer pays.
-   * Endpoint: POST /shopping/order/createOrder
-   *
-   * @param orderNum    Your internal order ID (used as reference)
-   * @param products    Array of { vid, quantity }
-   * @param address     Customer shipping address
-   */
   async createOrder(
     orderNum: string,
     products: { vid: string; quantity: number }[],
@@ -233,93 +162,185 @@ export class CJDropshippingService {
       city: string;
       address: string;
       zipCode: string;
-    },
+    }
   ): Promise<CJOrderResult> {
-    const data = await this.request<CJOrderResult>(
-      '/shopping/order/createOrder',
-      'POST',
-      {
-        orderNum,
-        products,
-        shippingInfo: address,
-        shippingCountry: address.countryCode,
-        shippingZip: address.zipCode,
-        shippingPhone: address.phone,
-        shippingCustomerName: address.name,
-        shippingAddress: address.address,
-        shippingCity: address.city,
-        shippingProvince: address.province,
-      },
-    );
-    return data;
+    return this.request<CJOrderResult>('/shopping/order/createOrder', 'POST', {
+      orderNum,
+      products,
+      shippingInfo: address,
+      shippingCountry: address.countryCode,
+      shippingZip: address.zipCode,
+      shippingPhone: address.phone,
+      shippingCustomerName: address.name,
+      shippingAddress: address.address,
+      shippingCity: address.city,
+      shippingProvince: address.province,
+    });
   }
 
-  /**
-   * Get order details and tracking from CJ.
-   * Endpoint: GET /shopping/order/getOrderDetail
-   */
   async getOrderDetail(orderId: string): Promise<CJOrderResult | null> {
     try {
-      const data = await this.request<CJOrderResult>(
-        `/shopping/order/getOrderDetail?orderId=${orderId}`,
-        'GET',
+      return await this.request<CJOrderResult>(
+        `/shopping/order/getOrderDetail?orderId=${encodeURIComponent(orderId)}`,
+        'GET'
       );
-      return data;
     } catch {
       return null;
     }
   }
 
-  /**
-   * Confirm and pay for an order on CJ (requires CJ wallet balance).
-   * Endpoint: POST /shopping/order/confirmOrder
-   */
   async confirmOrder(orderId: string): Promise<{ success: boolean }> {
     await this.request('/shopping/order/confirmOrder', 'POST', { orderId });
     return { success: true };
   }
 
-  // ── Internal HTTP helper ──────────────────────────────────────────────────
+  private async getAccessToken(): Promise<string> {
+    const now = Date.now();
+    if (this.accessToken && now < this.tokenExpiry - CJDropshippingService.TOKEN_REFRESH_SKEW_MS) {
+      return this.accessToken;
+    }
+
+    if (this.refreshToken) {
+      try {
+        const refreshed = await this.request<CJAuthToken>(
+          '/authentication/refreshAccessToken',
+          'POST',
+          { refreshToken: this.refreshToken },
+          false
+        );
+        this.setToken(refreshed, now);
+        this.logger.log('CJ Dropshipping: access token refreshed');
+        return this.accessToken!;
+      } catch {
+        this.logger.warn('CJ refresh token failed; requesting a new token');
+        this.accessToken = null;
+        this.refreshToken = null;
+        this.tokenExpiry = 0;
+      }
+    }
+
+    const email = this.config.get<string>('CJ_API_EMAIL');
+    const password = this.config.get<string>('CJ_API_KEY');
+
+    if (!email || !password) {
+      this.logger.warn('CJ_API_EMAIL or CJ_API_KEY not configured; using supplier fallback');
+      throw new Error('CJ Dropshipping API credentials not configured');
+    }
+
+    const token = await this.request<CJAuthToken>(
+      '/authentication/getAccessToken',
+      'POST',
+      { email, password },
+      false
+    );
+    this.setToken(token, now);
+    this.logger.log('CJ Dropshipping: access token loaded');
+    return this.accessToken!;
+  }
+
+  private setToken(token: CJAuthToken, now = Date.now()) {
+    if (!token.accessToken) {
+      throw new Error('CJ authentication returned no access token');
+    }
+
+    this.accessToken = token.accessToken;
+    this.refreshToken = token.refreshToken ?? this.refreshToken;
+    this.tokenExpiry = now + CJDropshippingService.TOKEN_TTL_MS;
+  }
 
   private async request<T>(
     path: string,
     method: 'GET' | 'POST',
     body?: Record<string, unknown>,
-    withAuth = true,
+    withAuth = true
   ): Promise<T> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    let lastError: unknown;
 
-    if (withAuth) {
-      const token = await this.getAccessToken();
-      headers['CJ-Access-Token'] = token;
-    }
+    for (let attempt = 1; attempt <= CJDropshippingService.MAX_ATTEMPTS; attempt += 1) {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
-
-    try {
-      const res = await fetch(`${this.BASE_URL}${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
-
-      const json = await res.json() as { code: number; message: string; data?: T; result?: T };
-
-      if (!res.ok || (json.code !== undefined && json.code !== 200)) {
-        throw new HttpException(
-          `CJ API error: ${json.message ?? res.statusText}`,
-          HttpStatus.BAD_GATEWAY,
-        );
+      if (withAuth) {
+        headers['CJ-Access-Token'] = await this.getAccessToken();
       }
 
-      // CJ wraps responses in { code, message, data } or { code, message, result }
-      return (json.data ?? json.result ?? json) as T;
-    } finally {
-      clearTimeout(timeout);
+      await this.waitForRateLimit();
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+
+      try {
+        const response = await fetch(`${this.baseUrl}${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+          signal: controller.signal,
+        });
+        const json = (await response.json().catch(() => ({}))) as CJApiEnvelope<T>;
+
+        if (withAuth && (response.status === 401 || json.code === 160101)) {
+          this.accessToken = null;
+          this.tokenExpiry = 0;
+          if (attempt < CJDropshippingService.MAX_ATTEMPTS) continue;
+        }
+
+        if (!response.ok || !this.isSuccessfulResponse(json)) {
+          throw new HttpException(
+            `CJ API error: ${json.message ?? response.statusText}`,
+            this.isRetryableStatus(response.status) ? HttpStatus.BAD_GATEWAY : HttpStatus.BAD_REQUEST
+          );
+        }
+
+        return this.unwrapResponse<T>(json);
+      } catch (error) {
+        lastError = error;
+        if (attempt >= CJDropshippingService.MAX_ATTEMPTS || !this.isRetryableError(error)) {
+          throw error;
+        }
+        await this.delay(500 * attempt);
+      } finally {
+        clearTimeout(timeout);
+      }
     }
+
+    throw lastError instanceof Error ? lastError : new Error('CJ API request failed');
+  }
+
+  private isSuccessfulResponse<T>(json: CJApiEnvelope<T>): boolean {
+    if (json.code === undefined) return true;
+    return json.code === 200 || json.code === '200' || json.result === true;
+  }
+
+  private unwrapResponse<T>(json: CJApiEnvelope<T>): T {
+    if (json.data !== undefined) return json.data;
+    if (json.accessToken) {
+      return {
+        accessToken: json.accessToken,
+        refreshToken: json.refreshToken,
+      } as T;
+    }
+    return (json.result ?? json) as T;
+  }
+
+  private isRetryableStatus(status: number): boolean {
+    return status === 408 || status === 429 || status >= 500;
+  }
+
+  private isRetryableError(error: unknown): boolean {
+    if (error instanceof HttpException) {
+      return error.getStatus() === HttpStatus.BAD_GATEWAY;
+    }
+    return true;
+  }
+
+  private async waitForRateLimit() {
+    const waitMs = Math.max(0, this.nextRequestAt - Date.now());
+    if (waitMs > 0) {
+      await this.delay(waitMs);
+    }
+    this.nextRequestAt = Date.now() + CJDropshippingService.MIN_REQUEST_INTERVAL_MS;
+  }
+
+  private delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

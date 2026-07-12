@@ -65,6 +65,15 @@ describe('SupplierApiService', () => {
         categoryName: 'Electronics',
         productImage: 'https://cj.com/img.jpg',
       }),
+      createOrder: jest.fn().mockResolvedValue({
+        orderId: 'cj-order-001',
+        orderNum: 'CJ-001',
+        status: 'pending',
+        trackNumber: 'CJTRACK123',
+        logisticName: 'CJ Logistics',
+        createTime: new Date().toISOString(),
+      }),
+      confirmOrder: jest.fn().mockResolvedValue({ success: true }),
     };
 
     mockAE = {
@@ -92,6 +101,10 @@ describe('SupplierApiService', () => {
         target_sale_price_currency: 'USD',
         original_price: '15.99',
         product_detail_url: 'https://ae.com/item/ae-001',
+      }),
+      createOrder: jest.fn().mockResolvedValue({
+        orderId: 'ae-order-001',
+        status: 'CREATED',
       }),
     };
 
@@ -201,6 +214,62 @@ describe('SupplierApiService', () => {
         }),
       });
       expect(suppliersService.mapToProduct).toHaveBeenCalledWith('supplier-product-1', 'product-1');
+    });
+  });
+
+  describe('dispatchOrder', () => {
+    it('should dispatch to CJ and call createOrder + confirmOrder', async () => {
+      const result = await service.dispatchOrder(
+        'cjdropshipping',
+        [{ externalId: 'cj-001', variantId: 'vid-001', quantity: 2 }],
+        { name: 'John Doe', phone: '123', country: 'US', city: 'NY', address: '123 St', state: 'NY', postalCode: '10001' },
+        'ORDER-TEST-001',
+      );
+
+      expect(mockCJ.createOrder).toHaveBeenCalled();
+      expect(mockCJ.confirmOrder).toHaveBeenCalledWith('cj-order-001');
+      expect(result.success).toBe(true);
+      expect(result.externalOrderId).toBe('cj-order-001');
+      expect(result.trackingNumber).toBe('CJTRACK123');
+    });
+
+    it('should dispatch to AliExpress and call createOrder', async () => {
+      const result = await service.dispatchOrder(
+        'aliexpress',
+        [{ externalId: 'ae-001', variantId: 'sku-001', quantity: 1 }],
+        { name: 'Jane Doe', phone: '456', country: 'Colombia', city: 'Bogota', address: 'Av 1', postalCode: '11001' },
+        'ORDER-TEST-002',
+      );
+
+      expect(mockAE.createOrder).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.externalOrderId).toBe('ae-order-001');
+    });
+
+    it('should return error for unknown supplier', async () => {
+      const result = await service.dispatchOrder(
+        'unknown',
+        [{ externalId: 'x', variantId: 'y', quantity: 1 }],
+        {},
+        'ORDER-TEST-003',
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Unsupported supplier');
+    });
+
+    it('should handle CJ createOrder failure gracefully', async () => {
+      (mockCJ.createOrder as jest.Mock).mockRejectedValue(new Error('CJ API timeout'));
+
+      const result = await service.dispatchOrder(
+        'cjdropshipping',
+        [{ externalId: 'cj-001', variantId: 'vid-001', quantity: 1 }],
+        { name: 'John', phone: '123', country: 'US', city: 'NY', address: '123 St', postalCode: '10001' },
+        'ORDER-TEST-004',
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('CJ API timeout');
     });
   });
 });

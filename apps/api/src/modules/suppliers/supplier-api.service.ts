@@ -200,6 +200,10 @@ export class SupplierApiService {
   /** Map CJ API response → internal SupplierProductResult */
   private mapCJProduct = (p: CJProduct): SupplierProductResult => {
     const cost = parseFloat(String(p.sellPrice) || '0');
+    const images = [...(p.productImages ?? []), p.productImage].filter(
+      (image): image is string => Boolean(image),
+    );
+
     return {
       externalId: p.pid,
       title: p.productNameEn ?? p.productName,
@@ -207,7 +211,7 @@ export class SupplierApiService {
       price: parseFloat((cost * 1.4).toFixed(2)),
       costPrice: cost,
       currency: 'USD',
-      images: p.productImages?.length ? p.productImages : [p.productImage],
+      images,
       shippingCost: 2.99,
       shippingTime: '7-15 days',
       variants: p.variants
@@ -272,6 +276,127 @@ export class SupplierApiService {
       rating: parseFloat(p.evaluate_rate ?? '0') / 20, // AE rates are 0-100
     };
   };
+
+  // ── Order Dispatch (Auto-Fulfillment) ────────────────────────────────────────
+
+  async dispatchOrder(
+    supplierCode: string,
+    items: { externalId: string; variantId: string; quantity: number }[],
+    shippingAddress: Record<string, any>,
+    outOrderId: string,
+  ): Promise<{ success: boolean; externalOrderId: string | null; trackingNumber: string | null; error?: string }> {
+    this.logger.log(`Dispatching order to ${supplierCode} (${outOrderId})`);
+
+    switch (supplierCode) {
+      case 'cjdropshipping':
+        return this.dispatchToCJ(items, shippingAddress, outOrderId);
+      case 'aliexpress':
+        return this.dispatchToAE(items, shippingAddress, outOrderId);
+      default:
+        return { success: false, externalOrderId: null, trackingNumber: null, error: `Unsupported supplier: ${supplierCode}` };
+    }
+  }
+
+  private async dispatchToCJ(
+    items: { externalId: string; variantId: string; quantity: number }[],
+    shippingAddress: Record<string, any>,
+    outOrderId: string,
+  ): Promise<{ success: boolean; externalOrderId: string | null; trackingNumber: string | null; error?: string }> {
+    try {
+      const address = this.normalizeAddressForCJ(shippingAddress);
+      const products = items.map((item) => ({ vid: item.variantId, quantity: item.quantity }));
+
+      const result = await this.cjService.createOrder(outOrderId, products, address);
+
+      if (!result?.orderId) {
+        return { success: false, externalOrderId: null, trackingNumber: null, error: 'CJ returned no orderId' };
+      }
+
+      try {
+        await this.cjService.confirmOrder(result.orderId);
+        this.logger.log(`CJ order ${result.orderId} confirmed`);
+      } catch (confirmErr: any) {
+        this.logger.warn(`CJ order ${result.orderId} created but confirm failed: ${confirmErr.message}`);
+      }
+
+      return {
+        success: true,
+        externalOrderId: result.orderId,
+        trackingNumber: result.trackNumber || null,
+      };
+    } catch (err: any) {
+      this.logger.error(`CJ dispatch failed: ${err.message}`);
+      return { success: false, externalOrderId: null, trackingNumber: null, error: err.message };
+    }
+  }
+
+  private async dispatchToAE(
+    items: { externalId: string; variantId: string; quantity: number }[],
+    shippingAddress: Record<string, any>,
+    outOrderId: string,
+  ): Promise<{ success: boolean; externalOrderId: string | null; trackingNumber: string | null; error?: string }> {
+    try {
+      const address = this.normalizeAddressForAE(shippingAddress);
+      const productList = items.map((item) => ({
+        productId: item.externalId,
+        productCount: item.quantity,
+        productSkuId: item.variantId,
+      }));
+
+      const result = await this.aeService.createOrder(productList, address, '', outOrderId);
+
+      if (!result?.orderId) {
+        return { success: false, externalOrderId: null, trackingNumber: null, error: 'AliExpress returned no orderId' };
+      }
+
+      return {
+        success: true,
+        externalOrderId: result.orderId,
+        trackingNumber: null,
+      };
+    } catch (err: any) {
+      this.logger.error(`AliExpress dispatch failed: ${err.message}`);
+      return { success: false, externalOrderId: null, trackingNumber: null, error: err.message };
+    }
+  }
+
+  private normalizeAddressForCJ(addr: Record<string, any>) {
+    return {
+      name: addr.name || `${addr.firstName || ''} ${addr.lastName || ''}`.trim() || 'Customer',
+      phone: addr.phone || '',
+      countryCode: this.toCountryCode(addr.country || 'US'),
+      province: addr.state || addr.province || '',
+      city: addr.city || '',
+      address: addr.address || addr.address1 || '',
+      zipCode: addr.postalCode || addr.zip || '',
+    };
+  }
+
+  private normalizeAddressForAE(addr: Record<string, any>) {
+    return {
+      contactPerson: addr.name || `${addr.firstName || ''} ${addr.lastName || ''}`.trim() || 'Customer',
+      mobileNo: addr.phone || '',
+      province: addr.state || addr.province || '',
+      city: addr.city || '',
+      address: addr.address || addr.address1 || '',
+      country: addr.country || 'US',
+      zip: addr.postalCode || addr.zip || '',
+    };
+  }
+
+  private toCountryCode(country: string): string {
+    const map: Record<string, string> = {
+      'United States': 'US', 'USA': 'US', 'Colombia': 'CO', 'Mexico': 'MX',
+      'Canada': 'CA', 'United Kingdom': 'GB', 'UK': 'GB', 'Germany': 'DE',
+      'France': 'FR', 'Spain': 'ES', 'Italy': 'IT', 'Australia': 'AU',
+      'Brazil': 'BR', 'Argentina': 'AR', 'Chile': 'CL', 'Peru': 'PE',
+      'Japan': 'JP', 'South Korea': 'KR', 'India': 'IN', 'Singapore': 'SG',
+      'Netherlands': 'NL', 'Sweden': 'SE', 'Norway': 'NO', 'Denmark': 'DK',
+      'Poland': 'PL', 'Portugal': 'PT', 'Belgium': 'BE', 'Switzerland': 'CH',
+      'China': 'CN',
+    };
+    return map[country] || country;
+  }
 
   // ── Mock fallback ──────────────────────────────────────────────────────────
 
