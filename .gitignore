@@ -29,6 +29,14 @@ playwright-report/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+
+# screenshots / temp assets (not to be committed)
+screenshots/
+
+# temp response files
+resp*.txt
+cj_resp.txt
 
 # turbo
 .turbo/

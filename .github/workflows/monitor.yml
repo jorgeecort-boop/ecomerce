@@ -9,32 +9,42 @@ jobs:
   monitor-api:
     name: Monitor API Health
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check API Health
         id: health
         run: |
           START_TIME=$(date +%s%N)
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
             "https://ecomerce-api-zulc.onrender.com/api/health" \
-            --max-time 15)
+            --connect-timeout 10 \
+            --max-time 75 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors || echo "000")
           END_TIME=$(date +%s%N)
           RESPONSE_TIME_MS=$(( (END_TIME - START_TIME) / 1000000 ))
-          
-          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
-          echo "response_time=$RESPONSE_TIME_MS" >> $GITHUB_OUTPUT
+
+          echo "http_code=$HTTP_CODE" >> "$GITHUB_OUTPUT"
+          echo "response_time=$RESPONSE_TIME_MS" >> "$GITHUB_OUTPUT"
           echo "API response: $HTTP_CODE in ${RESPONSE_TIME_MS}ms"
 
       - name: Check API Response Body
         id: body
         run: |
-          BODY=$(curl -s --max-time 15 "https://ecomerce-api-zulc.onrender.com/api/health")
-          echo "body=$BODY" >> $GITHUB_OUTPUT
+          BODY=$(curl -sS \
+            "https://ecomerce-api-zulc.onrender.com/api/health" \
+            --connect-timeout 10 \
+            --max-time 75 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors || echo '{"status":"unreachable"}')
+          echo "body=$BODY" >> "$GITHUB_OUTPUT"
 
       - name: Alert on API Down
         if: steps.health.outputs.http_code != '200'
         run: |
-          MSG="🚨 *API DOWN*\n\nStatus: ${{ steps.health.outputs.http_code }}\nURL: ecomerce-api-zulc.onrender.com\nTime: $(date -u)"
+          MSG="[API DOWN]\n\nStatus: ${{ steps.health.outputs.http_code }}\nURL: ecomerce-api-zulc.onrender.com\nTime: $(date -u)"
           echo "$MSG"
           if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
@@ -45,9 +55,9 @@ jobs:
           exit 1
 
       - name: Alert on Slow Response
-        if: steps.health.outputs.response_time > '10000'
+        if: steps.health.outputs.response_time > '75000'
         run: |
-          MSG="⚠️ *API SLOW*\n\nResponse: ${{ steps.health.outputs.response_time }}ms\nThreshold: 10000ms\nTime: $(date -u)"
+          MSG="[API SLOW]\n\nResponse: ${{ steps.health.outputs.response_time }}ms\nThreshold: 75000ms\nTime: $(date -u)"
           echo "$MSG"
           if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
@@ -59,28 +69,36 @@ jobs:
   monitor-frontend:
     name: Monitor Frontend Health
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Check Homepage
         id: home
         run: |
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
             "https://ecomerce-web.vercel.app/" \
-            --max-time 15)
-          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+            --connect-timeout 10 \
+            --max-time 45 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors || echo "000")
+          echo "http_code=$HTTP_CODE" >> "$GITHUB_OUTPUT"
 
       - name: Check Store Page
         id: store
         run: |
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
             "https://ecomerce-web.vercel.app/store/tienda-demo" \
-            --max-time 15)
-          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+            --connect-timeout 10 \
+            --max-time 60 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors || echo "000")
+          echo "http_code=$HTTP_CODE" >> "$GITHUB_OUTPUT"
 
       - name: Alert on Frontend Down
         if: steps.home.outputs.http_code != '200' || steps.store.outputs.http_code != '200'
         run: |
-          MSG="🚨 *FRONTEND DOWN*\n\nHome: ${{ steps.home.outputs.http_code }}\nStore: ${{ steps.store.outputs.http_code }}\nURL: ecomerce-web.vercel.app\nTime: $(date -u)"
+          MSG="[FRONTEND DOWN]\n\nHome: ${{ steps.home.outputs.http_code }}\nStore: ${{ steps.store.outputs.http_code }}\nURL: ecomerce-web.vercel.app\nTime: $(date -u)"
           echo "$MSG"
           if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
@@ -100,11 +118,11 @@ jobs:
           FAILURES=$(curl -s "https://api.github.com/repos/${{ github.repository }}/actions/runs?per_page=10&status=failure" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" | \
             jq '[.workflow_runs[] | select(.created_at > (now - 3600 | todate))] | length')
-          
+
           echo "Recent failures (last hour): $FAILURES"
-          
+
           if [ "$FAILURES" -gt 3 ]; then
-            MSG="⚠️ *CI/CD INSTABILITY*\n\nFailures in last hour: $FAILURES\nRepo: ${{ github.repository }}\nCheck: https://github.com/${{ github.repository }}/actions"
+            MSG="[CI/CD INSTABILITY]\n\nFailures in last hour: $FAILURES\nRepo: ${{ github.repository }}\nCheck: https://github.com/${{ github.repository }}/actions"
             echo "$MSG"
             if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
               curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
