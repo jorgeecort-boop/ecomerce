@@ -3,7 +3,7 @@ import { expect, request as playwrightRequest } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 const API_URL =
-  process.env.API_URL || 'https://ecomerce-api-zulc.onrender.com/api';
+  process.env.API_URL || 'http://localhost:3001/api';
 const SEED_TOKEN = process.env.E2E_SEED_TOKEN || '';
 
 let seededOnce = false;

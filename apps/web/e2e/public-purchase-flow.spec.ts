@@ -4,7 +4,7 @@ const STORE_SLUG = process.env.E2E_STORE_SLUG || 'tienda-demo';
 const PRODUCT_ID = process.env.E2E_PRODUCT_ID || 'cmogce3ds000jeqaeyvvnzapz';
 const PRODUCT_NAME =
   process.env.E2E_PRODUCT_NAME || 'Kit Ring Light 26cm con Tripode 2m para Streaming';
-const API_URL = process.env.API_URL || 'https://ecomerce-api-zulc.onrender.com/api';
+const API_URL = process.env.API_URL || 'http://localhost:3001/api';
 const shouldRunPurchaseE2E =
   Boolean(process.env.BASE_URL) || process.env.RUN_PURCHASE_E2E === 'true';
 

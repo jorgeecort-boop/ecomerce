@@ -1,4 +1,8 @@
-# 🚀 Guía de Deploy - Ecomerce en VPS IONOS
+# 🚀 Guía de Deploy - Ecomerce en VPS IONOS (LEGACY)
+
+> ⚠️ **A partir de julio 2026, el deploy principal es Render (API) + Vercel (Web).**
+> Esta guía de VPS se mantiene como documentación histórica y plan B.
+> La configuración de infraestructura VPS está en `infra/legacy-vps/`.
 
 ## Prerrequisitos en el VPS
 

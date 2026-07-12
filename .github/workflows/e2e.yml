@@ -31,7 +31,7 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose -f infra/docker/docker-compose.prod.yml up -d postgres redis
+          docker compose -f infra/docker/docker-compose.yml up -d postgres redis
           sleep 10
           npm run build
           npm run dev &
