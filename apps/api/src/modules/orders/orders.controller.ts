@@ -56,6 +56,14 @@ export class OrdersController {
     return this.ordersService.validateGuestShipping(dto.storeSlug, dto.shippingAddress);
   }
 
+  @Get('my-orders')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user orders (by email)' })
+  async findMyOrders(@Request() req: { user: { id: string; email: string } }) {
+    return this.ordersService.findByCustomerEmail(req.user.email);
+  }
+
   @Get('store/:storeId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

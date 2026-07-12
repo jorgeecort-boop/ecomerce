@@ -229,6 +229,27 @@ export class OrdersService {
     };
   }
 
+  async findByCustomerEmail(email: string): Promise<any[]> {
+    return this.prisma.order.findMany({
+      where: { customerEmail: email },
+      include: {
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            price: true,
+            title: true,
+            imageUrl: true,
+          },
+        },
+        store: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async validateGuestShipping(
     storeSlug: string,
     shippingAddress: {

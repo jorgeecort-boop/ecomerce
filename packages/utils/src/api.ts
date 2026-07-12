@@ -111,6 +111,9 @@ export const api = {
   },
 
   orders: {
+    myOrders: (token: string) =>
+      fetchApi<any[]>('/orders/my-orders', { token }),
+
     getByStore: (token: string, storeId: string) =>
       fetchApi<any[]>(`/orders/store/${storeId}`, { token }),
 
@@ -249,6 +252,30 @@ export const api = {
       fetchApi<any>('/cart/merge', {
         method: 'POST',
         body: JSON.stringify({ sessionId }),
+        token,
+      }),
+  },
+
+  wishlist: {
+    get: (token: string, storeId: string) =>
+      fetchApi<any>(`/wishlist/${storeId}`, { token }),
+
+    addItem: (token: string, storeId: string, productId: string) =>
+      fetchApi<any>(`/wishlist/${storeId}`, {
+        method: 'POST',
+        body: JSON.stringify({ productId }),
+        token,
+      }),
+
+    removeItem: (token: string, storeId: string, productId: string) =>
+      fetchApi<any>(`/wishlist/${storeId}/${productId}`, {
+        method: 'DELETE',
+        token,
+      }),
+
+    clear: (token: string, storeId: string) =>
+      fetchApi<any>(`/wishlist/${storeId}`, {
+        method: 'DELETE',
         token,
       }),
   },

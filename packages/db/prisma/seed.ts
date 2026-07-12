@@ -12,7 +12,10 @@ const seedPassword = process.env.SEED_ADMIN_PASSWORD || (() => { throw new Error
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@ecomerce.com' },
-    update: {},
+    update: {
+      password: hashedPassword,
+      isActive: true,
+    },
     create: {
       email: 'admin@ecomerce.com',
       password: hashedPassword,

@@ -22,6 +22,9 @@ import { TelegramModule } from './common/telegram.module';
 import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { TestSeedModule } from './modules/test-seed/test-seed.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { CurrencyModule } from './modules/currency/currency.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 @Module({
@@ -65,6 +68,9 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     TelegramBotModule,
     CouponsModule,
     TestSeedModule,
+    ReviewsModule,
+    CurrencyModule,
+    WishlistModule,
     WebhooksModule,
   ],
   controllers: [HealthController],
