@@ -4,7 +4,6 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Logger,
-  RawBodyRequest,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
@@ -62,12 +61,23 @@ export class ShopifyWebhookGuard implements CanActivate {
       : JSON.stringify(request.body);
 
     // ── 3. Compute HMAC ───────────────────────────────────────────────────
-    const secrets: string[] = [
-      this.config.get<string>('SHOPIFY_API_SECRET') || '',
-      this.config.get<string>('SHOPIFY_WEBHOOK_SECRET') || '',
-    ].filter(Boolean);
+    const secretConfigs: { key: string; label: string }[] = [
+      { key: 'SHOPIFY_API_SECRET', label: 'API_SECRET' },
+      { key: 'SHOPIFY_WEBHOOK_SECRET', label: 'WEBHOOK_SECRET' },
+      { key: 'SHOPIFY_WEBHOOK_SECRET_LEGACY', label: 'WEBHOOK_LEGACY' },
+    ];
 
-    const uniqueSecrets = [...new Set(secrets)];
+    const secrets: { value: string; label: string }[] = [];
+    for (const cfg of secretConfigs) {
+      const val = this.config.get<string>(cfg.key);
+      if (val) {
+        secrets.push({ value: val, label: cfg.label });
+      }
+    }
+
+    const uniqueSecrets = secrets.filter(
+      (s, i, arr) => arr.findIndex((x) => x.value === s.value) === i,
+    );
 
     if (uniqueSecrets.length === 0) {
       this.logger.error('No Shopify secrets configured — cannot verify webhooks');
@@ -75,25 +85,29 @@ export class ShopifyWebhookGuard implements CanActivate {
     }
 
     let isValid = false;
-    for (const secret of uniqueSecrets) {
+    let matchedLabel = '';
+    for (const { value, label } of uniqueSecrets) {
       const computedHmac = crypto
-        .createHmac('sha256', secret)
+        .createHmac('sha256', value)
         .update(bodyString, 'utf8')
         .digest('base64');
 
       if (this.timingSafeEqual(computedHmac, hmacHeader)) {
         isValid = true;
+        matchedLabel = label;
         break;
       }
     }
 
     if (!isValid) {
-      const [firstHmac] = uniqueSecrets.map(s =>
-        crypto.createHmac('sha256', s).update(bodyString, 'utf8').digest('base64'),
+      const attempts = uniqueSecrets.map(
+        ({ value, label }) =>
+          `${label}:${crypto.createHmac('sha256', value).update(bodyString, 'utf8').digest('base64').substring(0, 8)}...`,
       );
       this.logger.warn(
-        `Webhook HMAC INVALID — topic: ${topic}, shop: ${shopDomain}, ` +
-        `expected (API): ${(firstHmac || '').substring(0, 8)}..., received: ${hmacHeader.substring(0, 8)}...`,
+        `Webhook HMAC INVALID — topic: ${topic}, shop: ${shopDomain}\n` +
+        `  Attempted: [${attempts.join(', ')}]\n` +
+        `  Received:  ${hmacHeader.substring(0, 8)}...`,
       );
 
       const nodeEnv = this.config.get<string>('NODE_ENV', 'development');
@@ -101,6 +115,8 @@ export class ShopifyWebhookGuard implements CanActivate {
         throw new UnauthorizedException('Invalid Shopify HMAC signature');
       }
       this.logger.warn('HMAC guard ALLOWED despite mismatch (NODE_ENV != production)');
+    } else {
+      this.logger.log(`Webhook verified via ${matchedLabel} ✓ topic: ${topic}`);
     }
 
     // ── 5. Optional: Verify shop domain is a valid Shopify store ──────────
@@ -109,7 +125,6 @@ export class ShopifyWebhookGuard implements CanActivate {
       throw new UnauthorizedException('Webhook from unexpected shop');
     }
 
-    this.logger.log(`Webhook verified ✓ topic: ${topic}, shop: ${shopDomain}`);
     return true;
   }
 

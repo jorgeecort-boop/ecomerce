@@ -43,8 +43,14 @@ CJ_DROPSHIPPING_GUIDE.md
 QUICK_START_CJ.md
 
 # dev-only scripts (utilities, not production code)
-scripts/
-apps/api/scripts/
+/scripts/
+apps/api/scripts/*
+!apps/api/scripts/map-cj-variants.cjs
+!apps/api/scripts/export-cj-mapping-template.cjs
+!apps/api/scripts/apply-cj-mapping.cjs
+
+# user-generated CJ mapping (fill from example)
+apps/api/cj-mapping-template.csv
 
 # turbo
 .turbo/

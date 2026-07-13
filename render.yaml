@@ -16,13 +16,15 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: JWT_REFRESH_SECRET
-        generateValue: true
+        sync: false
       - key: JWT_EXPIRES_IN
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
+      - key: API_URL
+        value: https://ecomerce-api-zulc.onrender.com
       - key: WEB_URL
         value: https://ecomerce-web.vercel.app
       - key: MERCADOPAGO_ACCESS_TOKEN
@@ -36,6 +38,10 @@ services:
       - key: SHOPIFY_API_KEY
         sync: false
       - key: SHOPIFY_API_SECRET
+        sync: false
+      - key: SHOPIFY_WEBHOOK_SECRET
+        sync: false
+      - key: SHOPIFY_WEBHOOK_SECRET_LEGACY
         sync: false
       - key: SHOPIFY_ACCESS_TOKEN
         sync: false
@@ -51,8 +57,13 @@ services:
         sync: false
       - key: SHIPPO_API_KEY
         sync: false
-
-      # Set manually in Render dashboard if not using Blueprint sync:
-      # TELEGRAM_BOT_TOKEN
-      # TELEGRAM_CHAT_ID
-      # TELEGRAM_ALLOWED_CHAT_IDS
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: Ecomerce <onboarding@resend.dev>
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_ALLOWED_CHAT_IDS
+        sync: false
