@@ -68,6 +68,12 @@ process.on('unhandledRejection', (reason: unknown) => {
   console.error('[UnhandledRejection]', reason);
 });
 
+process.on('uncaughtException', (err: Error) => {
+  // Defensive: keep the process alive so Render does not kill the deploy
+  // before we can read the log. We still log the full stack for diagnosis.
+  console.error('[UncaughtException]', err.message, err.stack);
+});
+
 bootstrap().catch((err) => {
   console.error('[FatalStartupError]', err);
   process.exit(1);
