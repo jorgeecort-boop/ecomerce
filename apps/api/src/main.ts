@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
@@ -14,6 +15,14 @@ async function bootstrap() {
 
   // Security headers
   app.use(helmet());
+
+  // Raw Express health check: bypasses all NestJS guards, interceptors and filters
+  // so Render always gets a fast 200 during deploy, regardless of throttling or DB state.
+  const healthResponse = (req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  };
+  app.use('/api/health', healthResponse);
+  app.use('/api/health/ready', healthResponse);
 
   // Global prefix
   app.setGlobalPrefix('api');
