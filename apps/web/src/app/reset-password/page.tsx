@@ -61,7 +61,7 @@ function ResetForm() {
         <AlertCircle size={48} className="text-red-400 mx-auto" />
         <h1 className="text-xl font-bold text-white">Enlace inválido</h1>
         <p className="text-sm text-[rgba(255,255,255,0.6)]">Este enlace de restablecimiento no es válido.</p>
-        <Link href="/forgot-password" className="inline-block text-sm text-[#00B4D8] hover:underline">
+        <Link href="/forgot-password" className="inline-block text-sm text-[#a8adb8] hover:underline">
           Solicitar nuevo enlace
         </Link>
       </div>
@@ -94,7 +94,7 @@ function ResetForm() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
               required
-              className="w-full py-2.5 pl-10 pr-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm placeholder:text-[rgba(255,255,255,0.3)] outline-none focus:border-[#00B4D8] transition-colors"
+              className="w-full py-2.5 pl-10 pr-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm placeholder:text-[rgba(255,255,255,0.3)] outline-none focus:border-[#a8adb8] transition-colors"
             />
           </div>
         </div>
@@ -109,7 +109,7 @@ function ResetForm() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repite la contraseña"
               required
-              className="w-full py-2.5 pl-10 pr-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm placeholder:text-[rgba(255,255,255,0.3)] outline-none focus:border-[#00B4D8] transition-colors"
+              className="w-full py-2.5 pl-10 pr-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm placeholder:text-[rgba(255,255,255,0.3)] outline-none focus:border-[#a8adb8] transition-colors"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ function ResetForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 rounded-xl bg-[#00B4D8] text-white text-sm font-semibold hover:bg-[#00B4D8]/90 transition-all active:scale-[0.98] disabled:opacity-50"
+          className="w-full py-2.5 rounded-xl bg-[#a8adb8] text-white text-sm font-semibold hover:bg-[#a8adb8]/90 transition-all active:scale-[0.98] disabled:opacity-50"
         >
           {loading ? 'Restableciendo...' : 'Restablecer contraseña'}
         </button>
@@ -130,10 +130,10 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#03045E' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0f' }}>
       <div className="w-full max-w-md px-6">
         <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-8">
-          <Suspense fallback={<div className="animate-spin w-6 h-6 border-2 border-[#00B4D8] border-t-transparent rounded-full mx-auto" />}>
+          <Suspense fallback={<div className="animate-spin w-6 h-6 border-2 border-[#a8adb8] border-t-transparent rounded-full mx-auto" />}>
             <ResetForm />
           </Suspense>
         </div>

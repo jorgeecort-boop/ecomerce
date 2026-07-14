@@ -23,9 +23,9 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#03045E' }}>
+      <div className="min-h-screen" style={{ backgroundColor: '#0a0a0f' }}>
         <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin w-8 h-8 border-2 border-[#00B4D8] border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-2 border-[#a8adb8] border-t-transparent rounded-full" />
         </div>
       </div>
     );
@@ -34,13 +34,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#03045E' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#0a0a0f' }}>
       <header className="border-b border-[rgba(255,255,255,0.1)]">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-10">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
               <Link href="/" className="text-xl font-bold text-white">
-                SarahBits
+                SaraTech
               </Link>
               <nav className="hidden md:flex gap-6">
                 {navItems.map((item) => (
@@ -49,7 +49,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                     href={item.href}
                     className={`text-sm font-medium transition-colors ${
                       pathname === item.href
-                        ? 'text-[#00B4D8]'
+                        ? 'text-[#a8adb8]'
                         : 'text-[rgba(255,255,255,0.6)] hover:text-white'
                     }`}
                   >

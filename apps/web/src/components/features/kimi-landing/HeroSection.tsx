@@ -99,7 +99,7 @@ export default function HeroSection() {
     <section
       ref={sectionRef}
       className="relative min-h-[100dvh] flex max-[1024px]:flex-col overflow-hidden"
-      style={{ backgroundColor: '#03045E' }}
+      style={{ backgroundColor: '#0a0a0f' }}
     >
       {/* Left Content Zone */}
       <div className="relative z-10 w-[40%] max-[1024px]:w-full max-[1024px]:order-2 flex flex-col justify-center px-10 max-[768px]:px-5 py-20 max-[1024px]:py-12">
@@ -120,8 +120,8 @@ export default function HeroSection() {
             ref={headlineRef}
             className="text-white text-[56px] max-[768px]:text-[36px] font-medium leading-[1.2] tracking-[-1.68px]"
           >
-            Transforma tu{' '}
-            <span className="text-gradient-aurora shimmer-text">Setup</span>
+            Tecnología que{' '}
+            <span className="text-gradient-aurora shimmer-text">conecta</span> tu mundo
           </h1>
 
           {/* Description */}
@@ -129,10 +129,10 @@ export default function HeroSection() {
             ref={descRef}
             className="text-[rgba(255,255,255,0.55)] text-lg leading-relaxed mt-5"
           >
-            Los mejores gadgets tecnológicos al mejor precio. Audio, Gaming,
-            Streaming y más.
+            En SaraTech encontrarás gadgets premium seleccionados para tu día a día.
+            Audio, gaming, streaming y conectividad con envío a toda Colombia.
           </p>
-          <p className="text-[#E4FF1A] text-lg font-medium mt-2">
+          <p className="text-[#d0d5dc] text-lg font-medium mt-2">
             Envío gratis en compras +$60.000 COP
           </p>
 
@@ -140,7 +140,7 @@ export default function HeroSection() {
           <div ref={ctaRef} className="flex flex-wrap gap-4 mt-8">
             <button
               onClick={() => scrollTo('productos')}
-              className="gradient-hero-cta text-white px-8 py-3.5 rounded-full font-medium flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,180,216,0.35)] transition-all duration-300"
+              className="gradient-hero-cta text-white px-8 py-3.5 rounded-full font-medium flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(168,173,184,0.35)] transition-all duration-300"
             >
               Explorar Tienda <ArrowRight size={18} />
             </button>
@@ -187,7 +187,7 @@ export default function HeroSection() {
           className="absolute -left-[100px] top-1/2 -translate-y-1/2 w-[600px] h-[400px] pointer-events-none z-[1] opacity-60"
           style={{
             background:
-              'radial-gradient(ellipse, rgba(0,180,216,0.15) 0%, transparent 70%)',
+              'radial-gradient(ellipse, rgba(168,173,184,0.15) 0%, transparent 70%)',
           }}
         />
 
@@ -212,7 +212,7 @@ export default function HeroSection() {
           className="absolute inset-y-0 left-0 w-[25%] z-[2] pointer-events-none"
           style={{
             background:
-              'linear-gradient(90deg, #03045E 0%, transparent 100%)',
+              'linear-gradient(90deg, #0a0a0f 0%, transparent 100%)',
           }}
         />
 
@@ -251,7 +251,7 @@ export default function HeroSection() {
                     </span>
                   </div>
                   {/* Icon */}
-                  <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.1)] backdrop-blur-sm border border-[rgba(255,255,255,0.12)] flex items-center justify-center text-2xl group-hover:scale-[1.15] group-hover:bg-[rgba(0,180,216,0.2)] group-hover:border-[#00B4D8] transition-all duration-300">
+                  <div className="w-16 h-16 rounded-full bg-[rgba(255,255,255,0.1)] backdrop-blur-sm border border-[rgba(255,255,255,0.12)] flex items-center justify-center text-2xl group-hover:scale-[1.15] group-hover:bg-[rgba(168,173,184,0.2)] group-hover:border-[#a8adb8] transition-all duration-300">
                     {cat.icon}
                   </div>
                 </div>

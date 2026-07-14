@@ -19,6 +19,7 @@ import NewsletterSection from '@/components/features/kimi-store/NewsletterSectio
 import Footer from '@/components/shared/Footer';
 import ScrollProgressBar from '@/components/features/kimi-store/ScrollProgressBar';
 import ScrollToTopButton from '@/components/features/kimi-store/ScrollToTopButton';
+import WhatsAppButton from '@/components/shared/WhatsAppButton';
 import { AnimatePresence, motion } from 'framer-motion';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -209,7 +210,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#03045E' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#0a0a0f' }}>
       <ScrollProgressBar />
       <ScrollToTopButton />
 
@@ -261,18 +262,18 @@ export default function StoreClient({ store, products }: StoreClientProps) {
         />
 
         {/* Search & Sort Bar */}
-        <div className="px-6 lg:px-10 py-4" style={{ backgroundColor: '#03045E' }}>
+        <div className="px-6 lg:px-10 py-4" style={{ backgroundColor: '#0a0a0f' }}>
           <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             {/* Active Filters */}
             <div className="flex flex-wrap items-center gap-2">
               {searchQuery && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(0,180,216,0.1)] text-[#00B4D8] text-xs border border-[rgba(0,180,216,0.2)]">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(168,173,184,0.1)] text-[#a8adb8] text-xs border border-[rgba(168,173,184,0.2)]">
                   🔍 {searchQuery}
                   <button onClick={() => setSearchQuery('')} className="hover:text-white">×</button>
                 </span>
               )}
               {selectedCategory !== 'Todos' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(228,255,26,0.1)] text-[#E4FF1A] text-xs border border-[rgba(228,255,26,0.2)]">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(228,255,26,0.1)] text-[#d0d5dc] text-xs border border-[rgba(228,255,26,0.2)]">
                   {selectedCategory}
                   <button onClick={() => setSelectedCategory('Todos')} className="hover:text-white">×</button>
                 </span>
@@ -291,12 +292,12 @@ export default function StoreClient({ store, products }: StoreClientProps) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm outline-none focus:border-[#00B4D8] transition-colors"
+              className="px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm outline-none focus:border-[#a8adb8] transition-colors"
             >
-              <option value="featured" className="bg-[#03045E]">Destacados</option>
-              <option value="price-asc" className="bg-[#03045E]">Precio: Menor a Mayor</option>
-              <option value="price-desc" className="bg-[#03045E]">Precio: Mayor a Menor</option>
-              <option value="name" className="bg-[#03045E]">Nombre: A-Z</option>
+              <option value="featured" className="bg-[#0a0a0f]">Destacados</option>
+              <option value="price-asc" className="bg-[#0a0a0f]">Precio: Menor a Mayor</option>
+              <option value="price-desc" className="bg-[#0a0a0f]">Precio: Mayor a Menor</option>
+              <option value="name" className="bg-[#0a0a0f]">Nombre: A-Z</option>
             </select>
           </div>
         </div>
@@ -366,6 +367,11 @@ export default function StoreClient({ store, products }: StoreClientProps) {
           }
         }}
         storeSlug={store.slug}
+      />
+
+      <WhatsAppButton
+        phoneNumber="+573117313902"
+        message={`Hola SaraTech, estoy viendo la tienda ${store.name} y tengo una consulta.`}
       />
     </div>
   );

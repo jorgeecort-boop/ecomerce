@@ -50,7 +50,7 @@ export default function StatsSection() {
     <section
       ref={sectionRef}
       className="relative py-24"
-      style={{ backgroundColor: '#03045E' }}
+      style={{ backgroundColor: '#0a0a0f' }}
     >
       <div
         className="absolute inset-0 pointer-events-none gradient-navy opacity-50"
@@ -59,7 +59,7 @@ export default function StatsSection() {
       <div className="relative z-10 px-10 max-[768px]:px-5 max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(228,255,26,0.1)] text-[#E4FF1A] mb-4">
+          <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(228,255,26,0.1)] text-[#d0d5dc] mb-4">
             IMPACTO
           </span>
           <h2 className="text-white text-[42px] max-[768px]:text-[28px] font-medium tracking-[-1.26px]">
@@ -74,7 +74,7 @@ export default function StatsSection() {
             const marqueeText = `${stat.label} \u00B7 `.repeat(8);
             return (
               <div key={i} className="text-center flex-1 max-[768px]:w-full">
-                <Icon size={40} className="text-[#90E0EF] mx-auto mb-4" />
+                <Icon size={40} className="text-[#d0d5dc] mx-auto mb-4" />
                 <span
                   ref={(el) => { numberRefs.current[i] = el; }}
                   className="block text-[120px] max-[768px]:text-[64px] font-normal tracking-[-4.8px] text-gradient-aurora leading-[1.1]"

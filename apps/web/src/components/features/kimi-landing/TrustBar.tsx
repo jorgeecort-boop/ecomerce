@@ -47,7 +47,7 @@ export default function TrustBar() {
           const Icon = item.icon;
           return (
             <div key={i} className="flex items-center gap-3">
-              <Icon size={20} className="text-[#90E0EF] flex-shrink-0" />
+              <Icon size={20} className="text-[#d0d5dc] flex-shrink-0" />
               <div>
                 <div className="text-white text-sm font-medium">{item.title}</div>
                 <div className="text-[rgba(255,255,255,0.55)] text-xs">

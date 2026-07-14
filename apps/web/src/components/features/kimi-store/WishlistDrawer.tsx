@@ -59,7 +59,7 @@ export default function WishlistDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md z-[80] bg-[#03045E] border-l border-[rgba(255,255,255,0.12)] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-md z-[80] bg-[#0a0a0f] border-l border-[rgba(255,255,255,0.12)] shadow-2xl flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-[rgba(255,255,255,0.1)]">
@@ -100,9 +100,9 @@ export default function WishlistDrawer({
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link href={`/store/${storeSlug}/${item.id}`} onClick={onClose}>
-                        <p className="text-white text-sm font-medium truncate hover:text-[#00B4D8] transition-colors">{item.title}</p>
+                        <p className="text-white text-sm font-medium truncate hover:text-[#a8adb8] transition-colors">{item.title}</p>
                       </Link>
-                      <p className="text-[#90E0EF] text-sm font-semibold mt-0.5">
+                      <p className="text-[#d0d5dc] text-sm font-semibold mt-0.5">
                         {format(item.price)}
                       </p>
                     </div>

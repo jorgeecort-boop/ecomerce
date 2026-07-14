@@ -251,7 +251,7 @@ export default function ProductCarousel3D() {
   }, []);
 
   return (
-    <section id="productos" className="relative py-20" style={{ backgroundColor: '#03045E' }}>
+    <section id="productos" className="relative py-20" style={{ backgroundColor: '#0a0a0f' }}>
       {/* Radial gradient overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -265,7 +265,7 @@ export default function ProductCarousel3D() {
       <div className="relative z-10 px-10 max-[768px]:px-5 mb-8">
         <div className="flex items-end justify-between max-w-[1200px] mx-auto">
           <div>
-            <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(228,255,26,0.15)] text-[#E4FF1A] mb-4">
+            <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(228,255,26,0.15)] text-[#d0d5dc] mb-4">
               🔥 TENDENCIA
             </span>
             <h2 className="text-white text-[42px] max-[768px]:text-[28px] font-medium tracking-[-1.26px]">
@@ -274,7 +274,7 @@ export default function ProductCarousel3D() {
           </div>
           <button
             onClick={() => window.location.href = '/store/tienda-demo'}
-            className="text-[#90E0EF] text-sm hover:text-white transition-colors duration-200 flex items-center gap-1 max-[768px]:hidden"
+            className="text-[#d0d5dc] text-sm hover:text-white transition-colors duration-200 flex items-center gap-1 max-[768px]:hidden"
           >
             Ver todos <ArrowRight size={14} />
           </button>
@@ -293,7 +293,7 @@ export default function ProductCarousel3D() {
           {products.slice(0, 8).map((product, i) => (
             <div
               key={i}
-              className="group bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-3xl overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,180,216,0.15)] transition-all duration-500"
+              className="group bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-3xl overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(168,173,184,0.15)] transition-all duration-500"
             >
               <div className="relative p-4">
                 <span className="absolute top-4 left-4 gradient-sale text-white text-xs font-medium px-2.5 py-1 rounded-lg">
@@ -310,7 +310,7 @@ export default function ProductCarousel3D() {
                   {product.name}
                 </h3>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[#90E0EF] font-medium">
+                  <span className="text-[#d0d5dc] font-medium">
                     {formatPrice(product.price)}
                   </span>
                   <span className="text-[rgba(255,255,255,0.5)] text-sm line-through">
@@ -319,7 +319,7 @@ export default function ProductCarousel3D() {
                 </div>
                 <button
                   onClick={() => window.location.href = '/store/tienda-demo'}
-                  className="w-full py-2 border border-[rgba(255,255,255,0.12)] rounded-full text-xs text-white/70 hover:bg-[rgba(0,180,216,0.15)] hover:text-[#90E0EF] hover:border-[#00B4D8] transition-all duration-300"
+                  className="w-full py-2 border border-[rgba(255,255,255,0.12)] rounded-full text-xs text-white/70 hover:bg-[rgba(168,173,184,0.15)] hover:text-[#d0d5dc] hover:border-[#a8adb8] transition-all duration-300"
                 >
                   Ver producto
                 </button>

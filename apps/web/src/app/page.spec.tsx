@@ -78,10 +78,10 @@ describe('HomePage integration', () => {
 
     render(<HomePage />);
 
-    expect(screen.getByRole('button', { name: /sarahbits/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /SaraTech/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /productos/i })).toBeTruthy();
     expect(screen.getByRole('contentinfo')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: /transforma tu setup/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /tecnología que conecta tu mundo/i })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /productos m.s vendidos/i })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /explora nuestras categor.as/i })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /por qu. elegirnos/i })).toBeTruthy();

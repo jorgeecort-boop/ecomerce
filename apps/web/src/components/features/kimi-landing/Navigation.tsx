@@ -66,8 +66,8 @@ export default function Navigation({ cartCount, onCartClick, onStoreClick }: Nav
         {/* Logo */}
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <span className="relative">
-            <span className="text-white text-xl font-semibold">SarahBits</span>
-            <span className="logo-dot absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#00B4D8] rounded-full" />
+            <span className="text-white text-xl font-semibold">SaraTech</span>
+            <span className="logo-dot absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#a8adb8] rounded-full" />
           </span>
         </button>
 
@@ -85,7 +85,7 @@ export default function Navigation({ cartCount, onCartClick, onStoreClick }: Nav
             >
               {link.label}
               <span
-                className={`absolute -bottom-1 left-0 h-[2px] bg-[#00B4D8] transition-transform duration-300 origin-center ${
+                className={`absolute -bottom-1 left-0 h-[2px] bg-[#a8adb8] transition-transform duration-300 origin-center ${
                   activeSection === link.href.slice(1)
                     ? 'w-full scale-x-100'
                     : 'w-0 scale-x-0 group-hover:w-full group-hover:scale-x-100'
@@ -99,18 +99,18 @@ export default function Navigation({ cartCount, onCartClick, onStoreClick }: Nav
         <div className="flex items-center gap-4">
           <button
             onClick={onCartClick}
-            className="relative text-[rgba(255,255,255,0.55)] hover:text-[#00B4D8] transition-colors duration-200"
+            className="relative text-[rgba(255,255,255,0.55)] hover:text-[#a8adb8] transition-colors duration-200"
           >
             <ShoppingCart size={22} />
             {cartCount && cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#00B4D8] text-[#03045E] text-xs font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#a8adb8] text-[#0a0a0f] text-xs font-bold rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             )}
           </button>
           <button
             onClick={onStoreClick}
-            className="hidden max-[768px]:hidden md:inline-block bg-[#00B4D8] text-[#03045E] text-sm font-medium px-6 py-2.5 rounded-full hover:bg-[#90E0EF] hover:scale-[1.03] transition-all duration-300 shadow-lg shadow-cyan-500/20"
+            className="hidden max-[768px]:hidden md:inline-block bg-[#a8adb8] text-[#0a0a0f] text-sm font-medium px-6 py-2.5 rounded-full hover:bg-[#d0d5dc] hover:scale-[1.03] transition-all duration-300 shadow-lg shadow-cyan-500/20"
           >
             Ver Tienda
           </button>
@@ -125,7 +125,7 @@ export default function Navigation({ cartCount, onCartClick, onStoreClick }: Nav
 
       {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[99] bg-[#03045E]/95 backdrop-blur-lg md:hidden">
+        <div className="fixed inset-0 z-[99] bg-[#0a0a0f]/95 backdrop-blur-lg md:hidden">
           <div className="flex flex-col items-center justify-center h-full gap-8">
             {navLinks.map((link) => (
               <a
@@ -139,7 +139,7 @@ export default function Navigation({ cartCount, onCartClick, onStoreClick }: Nav
             ))}
             <button
               onClick={onStoreClick}
-              className="bg-[#00B4D8] text-[#03045E] font-medium px-8 py-3 rounded-full mt-4"
+              className="bg-[#a8adb8] text-[#0a0a0f] font-medium px-8 py-3 rounded-full mt-4"
             >
               Ver Tienda
             </button>

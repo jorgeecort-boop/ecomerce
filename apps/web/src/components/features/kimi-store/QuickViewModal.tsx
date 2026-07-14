@@ -94,7 +94,7 @@ export default function QuickViewModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#03045E] border border-[rgba(255,255,255,0.12)] shadow-2xl"
+            className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0a0a0f] border border-[rgba(255,255,255,0.12)] shadow-2xl"
           >
             {/* Close */}
             <button
@@ -129,7 +129,7 @@ export default function QuickViewModal({
                         onClick={() => setSelectedImage(i)}
                         className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all ${
                           selectedImage === i
-                            ? 'border-[#00B4D8]'
+                            ? 'border-[#a8adb8]'
                             : 'border-[rgba(255,255,255,0.2)]'
                         }`}
                       >
@@ -143,7 +143,7 @@ export default function QuickViewModal({
               {/* Info */}
               <div className="p-6 md:p-8 flex flex-col">
                 {product.category && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-[rgba(0,180,216,0.1)] text-[#00B4D8] border border-[rgba(0,180,216,0.2)] w-fit mb-3">
+                  <span className="text-xs px-2 py-1 rounded-full bg-[rgba(168,173,184,0.1)] text-[#a8adb8] border border-[rgba(168,173,184,0.2)] w-fit mb-3">
                     {product.category}
                   </span>
                 )}
@@ -237,7 +237,7 @@ export default function QuickViewModal({
                 <Link
                   href={`/store/${storeSlug}/${product.id}`}
                   onClick={onClose}
-                  className="mt-3 text-center text-sm text-[#90E0EF] hover:text-white transition-colors"
+                  className="mt-3 text-center text-sm text-[#d0d5dc] hover:text-white transition-colors"
                 >
                   Ver detalles del producto →
                 </Link>

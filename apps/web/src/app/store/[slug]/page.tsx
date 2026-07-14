@@ -15,13 +15,13 @@ export default async function StorePage({ params }: { params: { slug: string } }
 
   if (result.status === 'not_found') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#03045E' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0a0a0f' }}>
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-extrabold text-white mb-3">
             Tienda no encontrada
           </h1>
           <p className="text-[rgba(255,255,255,0.5)] mb-6">
-            Revisa el enlace o vuelve al inicio para explorar SarahBits.
+            Revisa el enlace o vuelve al inicio para explorar SaraTech.
           </p>
           <a
             href="/"
@@ -36,7 +36,7 @@ export default async function StorePage({ params }: { params: { slug: string } }
 
   if (result.status === 'unavailable') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#03045E' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0a0a0f' }}>
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6 animate-pulse">🚀</div>
           <h1 className="text-2xl font-extrabold text-white mb-3">
@@ -116,13 +116,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     });
 
     if (!storeRes.ok) {
-      return { title: 'SarahBits - Tech Gadgets' };
+      return { title: 'SaraTech - Tech Gadgets' };
     }
 
     const storeRaw = await storeRes.json();
     const store = storeRaw.data || storeRaw;
 
-    const storeName = store.name || 'SarahBits';
+    const storeName = store.name || 'SaraTech';
     const storeDesc = store.description || `Descubre los mejores gadgets tecnologicos en ${storeName}`;
 
     return {
@@ -133,7 +133,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         description: storeDesc,
         type: 'website',
         url: `/store/${store.slug || slug}`,
-        siteName: 'SarahBits',
+        siteName: 'SaraTech',
         images: store.logoUrl ? [{ url: store.logoUrl, width: 256, height: 256 }] : [],
         locale: 'es_CO',
       },
@@ -145,6 +145,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       },
     };
   } catch {
-    return { title: 'SarahBits - Tech Gadgets' };
+    return { title: 'SaraTech - Tech Gadgets' };
   }
 }

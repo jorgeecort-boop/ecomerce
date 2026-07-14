@@ -75,10 +75,10 @@ export default function ProductCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.5, delay: (index % 12) * 0.08 }}
-      className={`group relative bg-[rgba(255,255,255,0.04)] border rounded-2xl overflow-hidden transition-all duration-400 hover:shadow-[0_20px_60px_rgba(0,180,216,0.12)] ${
+      className={`group relative bg-[rgba(255,255,255,0.04)] border rounded-2xl overflow-hidden transition-all duration-400 hover:shadow-[0_20px_60px_rgba(168,173,184,0.12)] ${
         isOutOfStock
           ? 'border-[rgba(255,255,255,0.06)] opacity-60'
-          : 'border-[rgba(255,255,255,0.12)] hover:border-[rgba(0,180,216,0.3)]'
+          : 'border-[rgba(255,255,255,0.12)] hover:border-[rgba(168,173,184,0.3)]'
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -133,7 +133,7 @@ export default function ProductCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4 gap-2">
           <button
             onClick={(e) => { e.preventDefault(); onQuickView(); }}
-            className="px-4 py-2 bg-white/90 text-[#03045E] rounded-lg text-xs font-bold hover:bg-white transition-colors active:scale-95 flex items-center gap-1.5"
+            className="px-4 py-2 bg-white/90 text-[#0a0a0f] rounded-lg text-xs font-bold hover:bg-white transition-colors active:scale-95 flex items-center gap-1.5"
           >
             <Eye size={14} /> Vista rápida
           </button>
@@ -142,7 +142,7 @@ export default function ProductCard({
             className={`p-2 rounded-lg transition-colors active:scale-95 ${
               isWished
                 ? 'bg-pink-500 text-white'
-                : 'bg-white/90 text-[#03045E] hover:bg-white'
+                : 'bg-white/90 text-[#0a0a0f] hover:bg-white'
             }`}
           >
             <Heart size={16} fill={isWished ? 'currentColor' : 'none'} />
@@ -153,12 +153,12 @@ export default function ProductCard({
       {/* Content */}
       <div className="p-4">
         {product.category && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(0,180,216,0.1)] text-[#00B4D8] border border-[rgba(0,180,216,0.2)]">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(168,173,184,0.1)] text-[#a8adb8] border border-[rgba(168,173,184,0.2)]">
             {product.category}
           </span>
         )}
         <Link href={`/store/${storeSlug}/${product.id}`}>
-          <h3 className="font-semibold text-white text-sm leading-tight mt-2 mb-1 line-clamp-2 group-hover:text-[#00B4D8] transition-colors">
+          <h3 className="font-semibold text-white text-sm leading-tight mt-2 mb-1 line-clamp-2 group-hover:text-[#a8adb8] transition-colors">
             {product.title}
           </h3>
         </Link>

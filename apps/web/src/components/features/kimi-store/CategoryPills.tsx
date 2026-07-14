@@ -43,7 +43,7 @@ export default function CategoryPills({ selected, onSelect, productCounts }: Cat
   }, []);
 
   return (
-    <div className="py-6 px-6 lg:px-10" style={{ backgroundColor: '#03045E' }}>
+    <div className="py-6 px-6 lg:px-10" style={{ backgroundColor: '#0a0a0f' }}>
       <div
         ref={containerRef}
         className="max-w-[1200px] mx-auto flex flex-wrap items-center gap-3"
@@ -58,7 +58,7 @@ export default function CategoryPills({ selected, onSelect, productCounts }: Cat
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 active:scale-95 ${
                 isActive
                   ? 'gradient-aurora text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] border border-[rgba(255,255,255,0.12)] hover:border-[#00B4D8] hover:text-white'
+                  : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.7)] border border-[rgba(255,255,255,0.12)] hover:border-[#a8adb8] hover:text-white'
               }`}
             >
               {cat}

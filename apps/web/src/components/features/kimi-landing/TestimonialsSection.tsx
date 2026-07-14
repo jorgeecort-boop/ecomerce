@@ -7,10 +7,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const testimonials = [
-  { name: 'Carlos M.', city: 'Bogotá', stars: 5, quote: 'Los audífonos ANC llegaron en 2 días y la calidad de sonido es increíble. Mejor precio que en otras tiendas.', product: 'Audífonos Bluetooth 5.3', initials: 'CM', color: 'from-[#0077B6] to-[#00B4D8]' },
+  { name: 'Carlos M.', city: 'Bogotá', stars: 5, quote: 'Los audífonos ANC llegaron en 2 días y la calidad de sonido es increíble. Mejor precio que en otras tiendas.', product: 'Audífonos Bluetooth 5.3', initials: 'CM', color: 'from-[#5a5a6e] to-[#a8adb8]' },
   { name: 'María L.', city: 'Medellín', stars: 5, quote: 'El ring light con trípode transformó mis streams. La calidad es profesional y el precio muy accesible.', product: 'Kit Ring Light 26cm', initials: 'ML', color: 'from-[#FF006E] to-[#FF9B85]' },
-  { name: 'Andrés R.', city: 'Cali', stars: 5, quote: 'El smartwatch superó mis expectativas. Monitor cardíaco preciso y la batería dura una semana completa.', product: 'Smartwatch Deportivo HD', initials: 'AR', color: 'from-[#00B4D8] to-[#90E0EF]' },
-  { name: 'Laura P.', city: 'Barranquilla', stars: 5, quote: 'Compré el hub USB-C para mi laptop y es exactamente lo que necesitaba. HDMI 4K funciona perfecto.', product: 'Hub USB-C 7 en 1', initials: 'LP', color: 'from-[#0077B6] to-[#03045E]' },
+  { name: 'Andrés R.', city: 'Cali', stars: 5, quote: 'El smartwatch superó mis expectativas. Monitor cardíaco preciso y la batería dura una semana completa.', product: 'Smartwatch Deportivo HD', initials: 'AR', color: 'from-[#a8adb8] to-[#d0d5dc]' },
+  { name: 'Laura P.', city: 'Barranquilla', stars: 5, quote: 'Compré el hub USB-C para mi laptop y es exactamente lo que necesitaba. HDMI 4K funciona perfecto.', product: 'Hub USB-C 7 en 1', initials: 'LP', color: 'from-[#5a5a6e] to-[#0a0a0f]' },
 ];
 
 function TestimonialCard({ t }: { t: typeof testimonials[0] }) {
@@ -31,7 +31,7 @@ function TestimonialCard({ t }: { t: typeof testimonials[0] }) {
         ))}
       </div>
       <p className="text-white text-base italic leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-      <span className="inline-block mt-4 bg-[rgba(0,180,216,0.1)] text-[#90E0EF] text-xs px-3 py-1 rounded-md">
+      <span className="inline-block mt-4 bg-[rgba(168,173,184,0.1)] text-[#d0d5dc] text-xs px-3 py-1 rounded-md">
         Compró: {t.product}
       </span>
     </div>
@@ -68,7 +68,7 @@ export default function TestimonialsSection() {
       id="resenas"
       ref={sectionRef}
       className="relative py-24 overflow-hidden"
-      style={{ backgroundColor: '#03045E' }}
+      style={{ backgroundColor: '#0a0a0f' }}
     >
       <div className="relative z-10 px-10 max-[768px]:px-5">
         {/* Header */}

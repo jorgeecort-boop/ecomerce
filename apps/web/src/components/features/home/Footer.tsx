@@ -24,7 +24,7 @@ export function Footer() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-violet-500 flex items-center justify-center">
                 <span className="text-white font-extrabold text-lg">S</span>
               </div>
-              <span className="text-xl font-extrabold tracking-wider">SarahBits</span>
+              <span className="text-xl font-extrabold tracking-wider">SaraTech</span>
             </div>
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm mb-6">
               Gadgets tecnologicos premium para tu setup diario. Los mejores productos al mejor precio con envio a toda Colombia.
@@ -42,7 +42,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="mailto:contacto@sarahbits.com"
+                href="mailto:contacto@SaraTech.com"
                 className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-indigo-600 flex items-center justify-center transition-colors"
                 aria-label="Email"
               >
@@ -84,7 +84,7 @@ export function Footer() {
       <div className="border-t border-slate-800">
         <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} SarahBits. Todos los derechos reservados.
+            © {new Date().getFullYear()} SaraTech. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <span>🇨🇴 Hecho en Colombia</span>

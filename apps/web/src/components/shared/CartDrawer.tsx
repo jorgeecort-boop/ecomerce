@@ -62,11 +62,11 @@ export default function CartDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md z-[80] bg-[#03045E] border-l border-[rgba(255,255,255,0.12)] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-md z-[80] bg-[#0a0a0f] border-l border-[rgba(255,255,255,0.12)] shadow-2xl flex flex-col"
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-[rgba(255,255,255,0.1)]">
               <div className="flex items-center gap-2">
-                <ShoppingBag size={20} className="text-[#00B4D8]" />
+                <ShoppingBag size={20} className="text-[#a8adb8]" />
                 <h2 className="text-white text-lg font-semibold">
                   Carrito ({items.length})
                 </h2>
@@ -101,7 +101,7 @@ export default function CartDrawer({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{item.title}</p>
-                      <p className="text-[#90E0EF] text-sm font-semibold mt-0.5">
+                      <p className="text-[#d0d5dc] text-sm font-semibold mt-0.5">
                         {format(item.price)}
                       </p>
                       <div className="flex items-center gap-2 mt-2">

@@ -5,11 +5,11 @@ import dynamic from 'next/dynamic';
 const ProductCarousel3D = dynamic(() => import('./ProductCarousel3D'), {
   ssr: false,
   loading: () => (
-    <section id="productos" className="relative py-20" style={{ backgroundColor: '#03045E' }}>
+    <section id="productos" className="relative py-20" style={{ backgroundColor: '#0a0a0f' }}>
       <div className="relative z-10 px-10 max-[768px]:px-5 mb-8">
         <div className="flex items-end justify-between max-w-[1200px] mx-auto">
           <div>
-            <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(228,255,26,0.15)] text-[#E4FF1A] mb-4">
+            <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(228,255,26,0.15)] text-[#d0d5dc] mb-4">
               🔥 TENDENCIA
             </span>
             <h2 className="text-white text-[42px] max-[768px]:text-[28px] font-medium tracking-[-1.26px]">

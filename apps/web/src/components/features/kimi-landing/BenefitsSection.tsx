@@ -38,7 +38,7 @@ export default function BenefitsSection() {
   }, []);
 
   return (
-    <section className="relative py-24" style={{ backgroundColor: '#03045E' }}>
+    <section className="relative py-24" style={{ backgroundColor: '#0a0a0f' }}>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ backgroundColor: 'rgba(0,119,182,0.04)' }}
@@ -47,7 +47,7 @@ export default function BenefitsSection() {
       <div className="relative z-10 px-10 max-[768px]:px-5 max-w-[1100px] mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(144,224,239,0.12)] text-[#90E0EF] border border-[rgba(144,224,239,0.2)] mb-4">
+          <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(144,224,239,0.12)] text-[#d0d5dc] border border-[rgba(144,224,239,0.2)] mb-4">
             VENTAJAS
           </span>
           <h2 className="text-white text-[42px] max-[768px]:text-[28px] font-medium tracking-[-1.26px]">
@@ -68,10 +68,10 @@ export default function BenefitsSection() {
             return (
               <div
                 key={i}
-                className="group text-center p-8 rounded-3xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.12)] hover:border-[rgba(0,180,216,0.3)] hover:-translate-y-1 transition-all duration-400"
+                className="group text-center p-8 rounded-3xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.12)] hover:border-[rgba(168,173,184,0.3)] hover:-translate-y-1 transition-all duration-400"
               >
-                <div className="w-12 h-12 rounded-full bg-[rgba(0,180,216,0.12)] group-hover:bg-[rgba(0,180,216,0.25)] flex items-center justify-center mx-auto transition-colors duration-400">
-                  <Icon size={24} className="text-[#90E0EF]" />
+                <div className="w-12 h-12 rounded-full bg-[rgba(168,173,184,0.12)] group-hover:bg-[rgba(168,173,184,0.25)] flex items-center justify-center mx-auto transition-colors duration-400">
+                  <Icon size={24} className="text-[#d0d5dc]" />
                 </div>
                 <h3 className="text-white text-[28px] max-[768px]:text-[22px] font-medium tracking-[-0.84px] mt-5">
                   {benefit.title}

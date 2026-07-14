@@ -45,7 +45,7 @@ export const WakeUpLoader = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#03045E' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0a0a0f' }}>
       <div className="text-center max-w-md">
         <div className="text-6xl mb-6 animate-pulse">🚀</div>
         <h1 className="text-2xl font-extrabold text-white mb-3">

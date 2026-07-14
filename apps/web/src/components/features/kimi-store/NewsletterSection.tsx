@@ -39,14 +39,14 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section ref={sectionRef} className="py-20 px-6 lg:px-10" style={{ backgroundColor: '#03045E' }}>
+    <section ref={sectionRef} className="py-20 px-6 lg:px-10" style={{ backgroundColor: '#0a0a0f' }}>
       <div className="max-w-[600px] mx-auto text-center relative">
         {/* Glow */}
-        <div className="absolute inset-0 bg-[rgba(0,180,216,0.06)] rounded-3xl blur-3xl -z-10" />
+        <div className="absolute inset-0 bg-[rgba(168,173,184,0.06)] rounded-3xl blur-3xl -z-10" />
 
         <div className="p-8 md:p-12 rounded-3xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.12)] backdrop-blur-sm">
-          <div className="w-14 h-14 rounded-full bg-[rgba(0,180,216,0.12)] flex items-center justify-center mx-auto mb-6">
-            <Send size={24} className="text-[#90E0EF]" />
+          <div className="w-14 h-14 rounded-full bg-[rgba(168,173,184,0.12)] flex items-center justify-center mx-auto mb-6">
+            <Send size={24} className="text-[#d0d5dc]" />
           </div>
 
           <h3 className="text-white text-2xl font-medium tracking-[-0.5px] mb-2">
@@ -69,7 +69,7 @@ export default function NewsletterSection() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
-                className="flex-1 px-4 py-3 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm placeholder-[rgba(255,255,255,0.35)] outline-none focus:border-[#00B4D8] focus:shadow-[0_0_15px_rgba(0,180,216,0.1)] transition-all"
+                className="flex-1 px-4 py-3 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white text-sm placeholder-[rgba(255,255,255,0.35)] outline-none focus:border-[#a8adb8] focus:shadow-[0_0_15px_rgba(168,173,184,0.1)] transition-all"
               />
               <button
                 type="submit"

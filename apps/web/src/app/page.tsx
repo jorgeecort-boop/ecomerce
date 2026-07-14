@@ -13,6 +13,7 @@ import TestimonialsSection from '@/components/features/kimi-landing/Testimonials
 import FlashSaleCTA from '@/components/features/kimi-landing/FlashSaleCTA';
 import Footer from '@/components/shared/Footer';
 import CartDrawer from '@/components/shared/CartDrawer';
+import WhatsAppButton from '@/components/shared/WhatsAppButton';
 import { useCart } from '@/hooks/useCart';
 
 const STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG || 'tienda-demo';
@@ -28,7 +29,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#03045E' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#0a0a0f' }}>
       <Navigation
         cartCount={cartCount}
         onCartClick={handleCartClick}
@@ -53,6 +54,7 @@ export default function HomePage() {
         <FlashSaleCTA />
       </main>
       <Footer />
+      <WhatsAppButton phoneNumber="+573117313902" />
     </div>
   );
 }

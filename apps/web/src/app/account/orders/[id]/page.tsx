@@ -44,7 +44,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-2 border-[#00B4D8] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-[#a8adb8] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function OrderDetailPage() {
               ? 'bg-[rgba(40,167,69,0.15)] text-[#28A745]'
               : order.status === 'CANCELLED'
               ? 'bg-[rgba(220,53,69,0.15)] text-[#DC3545]'
-              : 'bg-[rgba(0,180,216,0.15)] text-[#00B4D8]'
+              : 'bg-[rgba(168,173,184,0.15)] text-[#a8adb8]'
           }`}
         >
           {STATUS_LABELS[order.status] || order.status}
@@ -104,9 +104,9 @@ export default function OrderDetailPage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                       isCompleted
-                        ? 'bg-[#00B4D8] text-white'
+                        ? 'bg-[#a8adb8] text-white'
                         : 'bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.3)]'
-                    } ${isCurrent ? 'ring-2 ring-[#00B4D8] ring-offset-2 ring-offset-[#03045E]' : ''}`}
+                    } ${isCurrent ? 'ring-2 ring-[#a8adb8] ring-offset-2 ring-offset-[#0a0a0f]' : ''}`}
                   >
                     {i + 1}
                   </div>
@@ -122,7 +122,7 @@ export default function OrderDetailPage() {
                       className="absolute top-4 left-[60%] w-[80%] h-[2px] -translate-y-1/2"
                       style={{
                         background: isCompleted
-                          ? '#00B4D8'
+                          ? '#a8adb8'
                           : 'rgba(255,255,255,0.1)',
                       }}
                     />
@@ -137,7 +137,7 @@ export default function OrderDetailPage() {
       {/* Items */}
       <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-6">
         <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
-          <Package size={18} className="text-[#00B4D8]" />
+          <Package size={18} className="text-[#a8adb8]" />
           Productos
         </h2>
         <div className="space-y-3">
@@ -175,7 +175,7 @@ export default function OrderDetailPage() {
           </div>
           <div className="flex justify-between text-sm font-bold pt-2 border-t border-[rgba(255,255,255,0.08)]">
             <span className="text-white">Total</span>
-            <span className="text-[#00B4D8]">${Number(order.total).toFixed(2)}</span>
+            <span className="text-[#a8adb8]">${Number(order.total).toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -184,7 +184,7 @@ export default function OrderDetailPage() {
       {order.shippingAddress && (
         <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-6">
           <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
-            <Truck size={18} className="text-[#00B4D8]" />
+            <Truck size={18} className="text-[#a8adb8]" />
             Envío
           </h2>
           <div className="space-y-2 text-sm">
@@ -201,14 +201,14 @@ export default function OrderDetailPage() {
           </div>
 
           {order.trackingNumber && (
-            <div className="mt-4 p-3 rounded-xl bg-[rgba(0,180,216,0.08)] border border-[rgba(0,180,216,0.15)]">
+            <div className="mt-4 p-3 rounded-xl bg-[rgba(168,173,184,0.08)] border border-[rgba(168,173,184,0.15)]">
               <p className="text-xs text-[rgba(255,255,255,0.4)] mb-1">Número de seguimiento</p>
               {order.trackingUrl ? (
                 <a
                   href={order.trackingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#00B4D8] text-sm font-medium hover:underline inline-flex items-center gap-1"
+                  className="text-[#a8adb8] text-sm font-medium hover:underline inline-flex items-center gap-1"
                 >
                   {order.trackingNumber}
                   <ExternalLink size={12} />
@@ -224,7 +224,7 @@ export default function OrderDetailPage() {
       {/* Payment */}
       <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-6">
         <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
-          <CreditCard size={18} className="text-[#00B4D8]" />
+          <CreditCard size={18} className="text-[#a8adb8]" />
           Pago
         </h2>
         <div className="flex items-center justify-between">

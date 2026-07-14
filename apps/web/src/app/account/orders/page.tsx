@@ -8,8 +8,8 @@ import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   PENDING: { bg: 'rgba(255,193,7,0.15)', text: '#FFC107' },
-  CONFIRMED: { bg: 'rgba(0,180,216,0.15)', text: '#00B4D8' },
-  PROCESSING: { bg: 'rgba(144,224,239,0.15)', text: '#90E0EF' },
+  CONFIRMED: { bg: 'rgba(168,173,184,0.15)', text: '#a8adb8' },
+  PROCESSING: { bg: 'rgba(144,224,239,0.15)', text: '#d0d5dc' },
   SHIPPED: { bg: 'rgba(40,167,69,0.15)', text: '#28A745' },
   DELIVERED: { bg: 'rgba(40,167,69,0.15)', text: '#28A745' },
   CANCELLED: { bg: 'rgba(220,53,69,0.15)', text: '#DC3545' },
@@ -50,7 +50,7 @@ export default function MyOrdersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-2 border-[#00B4D8] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-[#a8adb8] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function MyOrdersPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
-                      <Package size={20} className="text-[#00B4D8]" />
+                      <Package size={20} className="text-[#a8adb8]" />
                     </div>
                     <div>
                       <p className="text-white font-medium text-sm">{order.orderNumber}</p>

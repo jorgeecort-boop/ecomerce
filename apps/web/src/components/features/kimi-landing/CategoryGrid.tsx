@@ -43,7 +43,7 @@ export default function CategoryGrid() {
     <section
       id="categorias"
       className="relative py-20"
-      style={{ backgroundColor: '#03045E' }}
+      style={{ backgroundColor: '#0a0a0f' }}
     >
       <div
         className="absolute inset-0 pointer-events-none"
@@ -56,7 +56,7 @@ export default function CategoryGrid() {
       <div className="relative z-10 px-10 max-[768px]:px-5 max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(144,224,239,0.12)] text-[#90E0EF] border border-[rgba(144,224,239,0.2)] mb-4">
+          <span className="inline-block px-3 py-1 rounded-lg text-xs font-medium tracking-[0.48px] uppercase bg-[rgba(144,224,239,0.12)] text-[#d0d5dc] border border-[rgba(144,224,239,0.2)] mb-4">
             COLECCIÓN
           </span>
           <h2 className="text-white text-[42px] max-[768px]:text-[28px] font-medium tracking-[-1.26px]">
@@ -90,8 +90,8 @@ export default function CategoryGrid() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[rgba(3,4,94,0.9)] via-[rgba(3,4,94,0.3)] to-transparent" />
 
                 {/* Icon */}
-                <div className="absolute top-4 left-4 w-12 h-12 rounded-full bg-[rgba(0,180,216,0.2)] flex items-center justify-center group-hover:bg-[rgba(0,180,216,0.35)] transition-colors duration-300">
-                  <Icon size={22} className="text-[#90E0EF]" />
+                <div className="absolute top-4 left-4 w-12 h-12 rounded-full bg-[rgba(168,173,184,0.2)] flex items-center justify-center group-hover:bg-[rgba(168,173,184,0.35)] transition-colors duration-300">
+                  <Icon size={22} className="text-[#d0d5dc]" />
                 </div>
 
                 {/* Content */}
@@ -99,7 +99,7 @@ export default function CategoryGrid() {
                   <h3 className="text-white text-[28px] font-medium tracking-[-0.84px]">
                     {cat.name}
                   </h3>
-                  <span className="text-[#90E0EF] text-xs font-medium tracking-[0.48px] uppercase">
+                  <span className="text-[#d0d5dc] text-xs font-medium tracking-[0.48px] uppercase">
                     {cat.count} productos
                   </span>
                 </div>
@@ -112,7 +112,7 @@ export default function CategoryGrid() {
                 </div>
 
                 {/* Hover lift shadow */}
-                <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 group-hover:shadow-[0_20px_60px_rgba(0,180,216,0.15)] transition-all duration-500 pointer-events-none" />
+                <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 group-hover:shadow-[0_20px_60px_rgba(168,173,184,0.15)] transition-all duration-500 pointer-events-none" />
               </div>
             );
           })}

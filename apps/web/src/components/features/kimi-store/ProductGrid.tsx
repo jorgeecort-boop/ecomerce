@@ -77,7 +77,7 @@ export default function ProductGrid({
 
   if (isLoading) {
     return (
-      <section ref={sectionRef} className="py-12 px-6 lg:px-10" style={{ backgroundColor: '#03045E' }}>
+      <section ref={sectionRef} className="py-12 px-6 lg:px-10" style={{ backgroundColor: '#0a0a0f' }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -98,7 +98,7 @@ export default function ProductGrid({
 
   if (products.length === 0) {
     return (
-      <section className="py-20 px-6 lg:px-10" style={{ backgroundColor: '#03045E' }}>
+      <section className="py-20 px-6 lg:px-10" style={{ backgroundColor: '#0a0a0f' }}>
         <div className="max-w-[1200px] mx-auto text-center">
           <div className="text-6xl mb-4">📭</div>
           <h3 className="text-white text-xl font-medium mb-2">No se encontraron productos</h3>
@@ -109,7 +109,7 @@ export default function ProductGrid({
   }
 
   return (
-    <section ref={sectionRef} id="productos" className="py-12 px-6 lg:px-10" style={{ backgroundColor: '#03045E' }}>
+    <section ref={sectionRef} id="productos" className="py-12 px-6 lg:px-10" style={{ backgroundColor: '#0a0a0f' }}>
       <div className="max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="grid-header flex items-center justify-between mb-8">
@@ -145,7 +145,7 @@ export default function ProductGrid({
           <div className="text-center mt-12">
             <button
               onClick={onLoadMore}
-              className="px-8 py-3 rounded-full border border-[rgba(255,255,255,0.15)] text-white text-sm font-medium hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(0,180,216,0.3)] transition-all duration-300 active:scale-95"
+              className="px-8 py-3 rounded-full border border-[rgba(255,255,255,0.15)] text-white text-sm font-medium hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(168,173,184,0.3)] transition-all duration-300 active:scale-95"
             >
               Cargar más ({remaining} restantes)
             </button>

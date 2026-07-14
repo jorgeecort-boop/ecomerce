@@ -5,18 +5,22 @@
 @tailwind utilities;
 
 :root {
-  --navy: #03045E;
-  --aurora-blue: #00B4D8;
-  --cyan-glow: #90E0EF;
-  --ice-blue: #CAF0F8;
-  --teal: #0077B6;
-  --lime-pop: #E4FF1A;
+  --navy: #0a0a0f;
+  --aurora-blue: #a8adb8;
+  --cyan-glow: #d0d5dc;
+  --ice-blue: #e8eaed;
+  --teal: #5a5a6e;
+  --lime-pop: #c0c7d0;
   --warm-peach: #FF9B85;
   --aurora-pink: #FF006E;
   --white: #FFFFFF;
   --muted-white: rgba(255, 255, 255, 0.55);
   --faint-white: rgba(255, 255, 255, 0.12);
   --radius: 0.625rem;
+}
+
+html {
+  scroll-behavior: auto;
 }
 
 html {
@@ -32,11 +36,11 @@ body {
 
 @layer utilities {
   .gradient-aurora {
-    background: linear-gradient(90deg, #0077B6, #00B4D8, #90E0EF);
+    background: linear-gradient(90deg, #5a5a6e, #a8adb8, #d0d5dc);
   }
 
   .gradient-hero-cta {
-    background: linear-gradient(90deg, #00B4D8, #0077B6);
+    background: linear-gradient(90deg, #a8adb8, #5a5a6e);
   }
 
   .gradient-sale {
@@ -44,11 +48,11 @@ body {
   }
 
   .gradient-navy {
-    background: linear-gradient(180deg, #03045E 0%, #0077B6 100%);
+    background: linear-gradient(180deg, #0a0a0f 0%, #5a5a6e 100%);
   }
 
   .text-gradient-aurora {
-    background: linear-gradient(90deg, #0077B6, #00B4D8, #90E0EF);
+    background: linear-gradient(90deg, #5a5a6e, #a8adb8, #d0d5dc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -71,12 +75,12 @@ body {
   0%, 100% {
     transform: scale(1);
     opacity: 1;
-    box-shadow: 0 0 8px rgba(0, 180, 216, 0.4);
+    box-shadow: 0 0 8px rgba(168, 173, 184, 0.4);
   }
   50% {
     transform: scale(1.3);
     opacity: 0.8;
-    box-shadow: 0 0 20px rgba(0, 180, 216, 0.7);
+    box-shadow: 0 0 20px rgba(168, 173, 184, 0.7);
   }
 }
 

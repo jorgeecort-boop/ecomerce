@@ -51,8 +51,8 @@ export default function StoreNavigation({
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
           <span className="relative">
-            <span className="text-white text-xl font-semibold">SarahBits</span>
-            <span className="logo-dot absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#00B4D8] rounded-full" />
+            <span className="text-white text-xl font-semibold">SaraTech</span>
+            <span className="logo-dot absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#a8adb8] rounded-full" />
           </span>
         </button>
 
@@ -68,7 +68,7 @@ export default function StoreNavigation({
             placeholder="Buscar productos..."
             className={`w-full bg-[rgba(255,255,255,0.06)] border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[rgba(255,255,255,0.35)] outline-none transition-all duration-300 ${
               searchFocused
-                ? 'border-[#00B4D8] shadow-[0_0_15px_rgba(0,180,216,0.15)]'
+                ? 'border-[#a8adb8] shadow-[0_0_15px_rgba(168,173,184,0.15)]'
                 : 'border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.2)]'
             }`}
           />
@@ -108,11 +108,11 @@ export default function StoreNavigation({
             aria-label="Abrir carrito"
             data-testid="store-cart-button"
             onClick={onCartClick}
-            className="relative text-[rgba(255,255,255,0.55)] hover:text-[#00B4D8] transition-colors duration-200"
+            className="relative text-[rgba(255,255,255,0.55)] hover:text-[#a8adb8] transition-colors duration-200"
           >
             <ShoppingCart size={22} />
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#00B4D8] text-[#03045E] text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#a8adb8] text-[#0a0a0f] text-[10px] font-bold rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             )}
@@ -130,7 +130,7 @@ export default function StoreNavigation({
 
       {/* Mobile Search & Menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[99] bg-[#03045E]/95 backdrop-blur-lg md:hidden pt-20 px-6">
+        <div className="fixed inset-0 z-[99] bg-[#0a0a0f]/95 backdrop-blur-lg md:hidden pt-20 px-6">
           <div className="flex flex-col gap-6">
             {/* Mobile Search */}
             <div className="relative">
@@ -144,7 +144,7 @@ export default function StoreNavigation({
               />
             </div>
             <div className="text-center text-[rgba(255,255,255,0.55)] text-sm">
-              {currency} · SarahBits Tienda
+              {currency} · SaraTech Tienda
             </div>
           </div>
         </div>

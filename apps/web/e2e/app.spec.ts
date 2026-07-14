@@ -6,7 +6,7 @@ test.describe('Landing Page', () => {
   test('should load the landing page', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/Ecomerce/);
-    await expect(page.getByRole('link', { name: 'SarahBits' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'SaraTech' })).toBeVisible();
     await expect(page.getByRole('heading', { name: /transforma tu setup/i })).toBeVisible();
   });
 

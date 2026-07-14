@@ -21,7 +21,7 @@ export interface HeaderProps {
 }
 
 export function Header({
-  logoText = 'SarahBits',
+  logoText = 'SaraTech',
   navItems = defaultNavItems,
   cartCount = 0,
   onMenuToggle,

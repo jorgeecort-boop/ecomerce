@@ -45,30 +45,30 @@ export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
     <section
       ref={sectionRef}
       className="relative pt-28 pb-16 overflow-hidden"
-      style={{ backgroundColor: '#03045E' }}
+      style={{ backgroundColor: '#0a0a0f' }}
     >
       {/* Background glows */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[rgba(0,180,216,0.06)] rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-[rgba(228,255,26,0.04)] rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[300px] h-[300px] bg-[rgba(255,0,110,0.04)] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[rgba(168,173,184,0.06)] rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-[rgba(168,173,184,0.04)] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[300px] h-[300px] bg-[rgba(90,90,110,0.05)] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="relative z-10 px-6 lg:px-10 max-w-[800px] mx-auto text-center">
         {/* Big Logo */}
         <div ref={logoRef} className="mb-6">
           <h2 className="text-[72px] max-[768px]:text-[52px] max-[480px]:text-[40px] font-bold tracking-[-3px] leading-none text-gradient-aurora shimmer-text">
-            SarahBits
+            SaraTech
           </h2>
           <div className="flex items-center justify-center gap-3 mt-3">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-[rgba(0,180,216,0.4)]" />
-            <span className="logo-dot w-2.5 h-2.5 bg-[#00B4D8] rounded-full inline-block" />
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-[rgba(0,180,216,0.4)]" />
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-[rgba(168,173,184,0.4)]" />
+            <span className="logo-dot w-2.5 h-2.5 bg-[#a8adb8] rounded-full inline-block" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-[rgba(168,173,184,0.4)]" />
           </div>
         </div>
 
         {/* Badge */}
-        <div ref={badgeRef} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[rgba(228,255,26,0.12)] border border-[rgba(228,255,26,0.2)] mb-5">
-          <span className="fire-pulse inline-block">🔥</span>
-          <span className="text-[#E4FF1A] text-sm font-medium">Tienda Oficial</span>
+        <div ref={badgeRef} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[rgba(168,173,184,0.12)] border border-[rgba(168,173,184,0.25)] mb-5">
+          <span className="inline-block">⚡</span>
+          <span className="text-[#d0d5dc] text-sm font-medium">Tienda Oficial</span>
         </div>
 
         {/* Store Name */}
@@ -84,11 +84,11 @@ export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
           ref={subtitleRef}
           className="text-[rgba(255,255,255,0.55)] text-lg leading-relaxed max-w-[500px] mx-auto"
         >
-          Los mejores gadgets tecnológicos al mejor precio. Audio, Gaming, Streaming y más.
+          Tecnología que conecta tu mundo. Gadgets premium, envío seguro y soporte real.
         </p>
 
         {/* Shipping */}
-        <p ref={shippingRef} className="text-[#E4FF1A] text-base font-medium mt-2">
+        <p ref={shippingRef} className="text-[#d0d5dc] text-base font-medium mt-2">
           Envío gratis en compras +$60.000 COP
         </p>
 
@@ -105,8 +105,8 @@ export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
             const Icon = stat.icon;
             return (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[rgba(0,180,216,0.12)] flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-[#90E0EF]" />
+                <div className="w-10 h-10 rounded-full bg-[rgba(168,173,184,0.12)] flex items-center justify-center flex-shrink-0">
+                  <Icon size={18} className="text-[#d0d5dc]" />
                 </div>
                 <div className="text-left">
                   <div className="text-white text-base font-semibold tracking-[-0.5px]">
@@ -128,7 +128,7 @@ export default function StoreHero({ storeName, productCount }: StoreHeroProps) {
         <div ref={ctaRef} className="mt-10">
           <button
             onClick={scrollToProducts}
-            className="gradient-hero-cta text-white px-10 py-4 rounded-full font-medium flex items-center gap-2 mx-auto hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,180,216,0.35)] transition-all duration-300 active:scale-95"
+            className="gradient-hero-cta text-white px-10 py-4 rounded-full font-medium flex items-center gap-2 mx-auto hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(168,173,184,0.35)] transition-all duration-300 active:scale-95"
           >
             Explorar Productos <ArrowRight size={18} />
           </button>
