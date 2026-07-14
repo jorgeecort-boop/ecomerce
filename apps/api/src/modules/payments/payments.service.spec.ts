@@ -386,5 +386,87 @@ describe('PaymentsService', () => {
 
       expect(mockEmail.sendOrderConfirmation).not.toHaveBeenCalled();
     });
+
+    it('should skip duplicate approved webhook when payment is already PAID', async () => {
+      mockMercadoPago.getPayment.mockResolvedValue({
+        status: 'approved',
+        metadata: { orderId: 'order-1' },
+        payment_method_id: 'visa',
+      });
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
+      mockPrisma.payment.findFirst.mockResolvedValue({
+        ...mockPaymentRecord,
+        status: 'PAID',
+      });
+
+      await service.handlePaymentNotification({
+        type: 'payment',
+        data: { id: 12345 },
+      });
+
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(mockEmail.sendOrderConfirmation).not.toHaveBeenCalled();
+      expect(mockTelegram.notifyPaymentReceived).not.toHaveBeenCalled();
+    });
+
+    it('should not overwrite PAID status with pending webhook', async () => {
+      mockMercadoPago.getPayment.mockResolvedValue({
+        status: 'pending',
+        metadata: { orderId: 'order-1' },
+        payment_method_id: 'rapipago',
+      });
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
+      mockPrisma.payment.findFirst.mockResolvedValue({
+        ...mockPaymentRecord,
+        status: 'PAID',
+      });
+
+      await service.handlePaymentNotification({
+        type: 'payment',
+        data: { id: 12345 },
+      });
+
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('should not overwrite PAID status with rejected webhook', async () => {
+      mockMercadoPago.getPayment.mockResolvedValue({
+        status: 'rejected',
+        metadata: { orderId: 'order-1' },
+        payment_method_id: 'visa',
+      });
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
+      mockPrisma.payment.findFirst.mockResolvedValue({
+        ...mockPaymentRecord,
+        status: 'PAID',
+      });
+
+      await service.handlePaymentNotification({
+        type: 'payment',
+        data: { id: 12345 },
+      });
+
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should not overwrite PAID status with in_process webhook', async () => {
+      mockMercadoPago.getPayment.mockResolvedValue({
+        status: 'in_process',
+        metadata: { orderId: 'order-1' },
+        payment_method_id: 'bolbank',
+      });
+      mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
+      mockPrisma.payment.findFirst.mockResolvedValue({
+        ...mockPaymentRecord,
+        status: 'PAID',
+      });
+
+      await service.handlePaymentNotification({
+        type: 'payment',
+        data: { id: 12345 },
+      });
+
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
+    });
   });
 });

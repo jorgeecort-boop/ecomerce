@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Logger, BadRequestException, Req, Headers } from '@nestjs/common';
+import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { PrismaService } from '../../config/prisma.service';
 import { MercadoPagoService } from './mercado-pago.service';
 import { PaymentsService } from './payments.service';
 import { OrdersService } from '../orders/orders.service';
@@ -12,6 +13,7 @@ export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly mercadoPagoService: MercadoPagoService,
     private readonly paymentsService: PaymentsService,
     private readonly ordersService: OrdersService
@@ -35,6 +37,25 @@ export class PaymentsController {
     }
   ) {
     try {
+      const dbProducts = await this.prisma.product.findMany({
+        where: { id: { in: dto.items.map((i) => i.productId) } },
+        select: { id: true, price: true, title: true },
+      });
+
+      const foundIds = new Set(dbProducts.map((p) => p.id));
+      for (const item of dto.items) {
+        if (!foundIds.has(item.productId)) {
+          throw new BadRequestException(`Product not found: ${item.productId}`);
+        }
+      }
+
+      const expectedTotal = dto.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
+        + (dto.shippingCost || 0) + (dto.tax || 0);
+
+      if (Math.abs(dto.total - expectedTotal) > 0.01) {
+        throw new BadRequestException('Total amount mismatch');
+      }
+
       const order = await this.ordersService.createGuestOrder({
         storeSlug: dto.storeSlug,
         items: dto.items,
@@ -71,6 +92,7 @@ export class PaymentsController {
         orderNumber: order.orderNumber,
       };
     } catch (e) {
+      if (e instanceof BadRequestException) throw e;
       const error = e as Error;
       this.logger.error(`Failed to create preference: ${error.message}`);
       throw new BadRequestException('Failed to create payment preference');
@@ -86,20 +108,23 @@ export class PaymentsController {
     @Headers('x-request-id') xRequestId: string | undefined,
     @Req() req: any
   ) {
-    this.logger.log(`Received notification: ${JSON.stringify(body)}`);
+    this.logger.log(`Payment webhook received: id=${body?.data?.id || body?.id}`);
 
-    if (xSignature && process.env.NODE_ENV === 'production') {
-      const rawBody = req.rawBody as Buffer | undefined;
-      if (!rawBody || rawBody.length === 0) {
-        this.logger.warn('Raw body not available for signature verification');
-      } else {
-        const isValid = this.verifyMercadoPagoSignature(rawBody, xSignature, xRequestId || '');
-        if (!isValid) {
-          this.logger.warn('Invalid webhook signature');
-          throw new BadRequestException('Invalid signature');
-        }
-        this.logger.log('Webhook signature verified');
-      }
+    if (!xSignature) {
+      this.logger.warn('Webhook rejected: missing x-signature header');
+      throw new UnauthorizedException('Missing x-signature header');
+    }
+
+    const rawBody = req.rawBody as Buffer | undefined;
+    if (!rawBody || rawBody.length === 0) {
+      this.logger.error('Webhook rejected: raw body not available');
+      throw new UnauthorizedException('Raw body not available for signature verification');
+    }
+
+    const isValid = this.verifyMercadoPagoSignature(rawBody, xSignature, xRequestId || '');
+    if (!isValid) {
+      this.logger.warn('Webhook rejected: invalid x-signature');
+      throw new UnauthorizedException('Invalid signature');
     }
 
     const notification = body.type ? body : { type: body.topic, data: { id: body.id } };

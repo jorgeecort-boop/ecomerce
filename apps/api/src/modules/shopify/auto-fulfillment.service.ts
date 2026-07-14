@@ -238,6 +238,14 @@ export class AutoFulfillmentService {
       return;
     }
 
+    const existingSupplierOrders = await this.prisma.supplierOrder.findMany({
+      where: { id: order.supplierOrderId || undefined },
+    });
+    if (existingSupplierOrders.length > 0) {
+      this.logger.log(`Order ${order.orderNumber} already has supplier orders, skipping fulfillment`);
+      return;
+    }
+
     const shippingAddress = order.shippingAddress as Record<string, any>;
     const supplierResults: { success: boolean; externalOrderId: string | null; trackingNumber: string | null }[] = [];
 

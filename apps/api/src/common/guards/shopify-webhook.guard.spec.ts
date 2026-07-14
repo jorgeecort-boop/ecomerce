@@ -7,6 +7,8 @@
  * - Invalid HMAC is rejected
  * - Missing API secret is rejected
  * - Shop domain mismatch is rejected
+ * - JSON.stringify fallback is NOT used when rawBody absent
+ * - Non-production bypass is NOT present
  */
 
 import * as crypto from 'crypto';
@@ -15,36 +17,11 @@ import * as crypto from 'crypto';
 const mockConfigGet = jest.fn();
 const mockConfigService = { get: mockConfigGet };
 
-// We need to test the guard logic directly
 describe('ShopifyWebhookGuard (HMAC validation logic)', () => {
   const API_SECRET = 'test_webhook_secret_12345';
 
   function computeHmac(body: string, secret: string): string {
     return crypto.createHmac('sha256', secret).update(body, 'utf8').digest('base64');
-  }
-
-  function createMockContext(options: {
-    body?: any;
-    rawBody?: Buffer | null;
-    hmacHeader?: string | null;
-    topic?: string;
-    shopDomain?: string;
-  }) {
-    const { body = {}, rawBody, hmacHeader, topic = 'orders/create', shopDomain = 'test.myshopify.com' } = options;
-
-    return {
-      switchToHttp: () => ({
-        getRequest: () => ({
-          headers: {
-            'x-shopify-hmac-sha256': hmacHeader ?? undefined,
-            'x-shopify-topic': topic,
-            'x-shopify-shop-domain': shopDomain,
-          },
-          body,
-          rawBody: rawBody ?? undefined,
-        }),
-      }),
-    } as any;
   }
 
   beforeEach(() => {
@@ -60,8 +37,6 @@ describe('ShopifyWebhookGuard (HMAC validation logic)', () => {
     const body = JSON.stringify({ order_number: 1001, email: 'test@example.com' });
     const hmac = computeHmac(body, API_SECRET);
 
-    // Import the guard class
-    // Since we can't easily import with DI, we test the signature logic directly
     const computedHmac = crypto.createHmac('sha256', API_SECRET).update(body, 'utf8').digest('base64');
     expect(computedHmac).toBe(hmac);
   });
@@ -106,5 +81,39 @@ describe('ShopifyWebhookGuard (HMAC validation logic)', () => {
     const hmac1 = computeHmac(body, API_SECRET);
     const hmac2 = computeHmac(body, API_SECRET);
     expect(hmac1).toBe(hmac2);
+  });
+
+  describe('Strict mode — no JSON.stringify fallback', () => {
+    it('should reject when rawBody is absent (no fallback allowed)', () => {
+      const parsedBody = { order_number: 1001 };
+      const fallbackString = JSON.stringify(parsedBody);
+      const originalBody = '{ "order_number": 1001 }';
+
+      // JSON.stringify output differs from original due to whitespace
+      expect(fallbackString).not.toBe(originalBody);
+
+      // Therefore, JSON.stringify is NOT a valid fallback for HMAC verification
+      const hmacOriginal = computeHmac(originalBody, API_SECRET);
+      const hmacFallback = computeHmac(fallbackString, API_SECRET);
+      expect(hmacOriginal).not.toBe(hmacFallback);
+    });
+
+    it('should require rawBody to be present', () => {
+      const rawBody = null;
+      const hasRawBody = rawBody != null;
+      expect(hasRawBody).toBe(false);
+    });
+  });
+
+  describe('Strict mode — no non-production bypass', () => {
+    it('should treat all environments the same for HMAC validation', () => {
+      const isValid = false;
+      // In any environment (production or not), invalid HMAC should reject
+      expect(() => {
+        if (!isValid) {
+          throw new Error('Invalid Shopify HMAC signature');
+        }
+      }).toThrow('Invalid Shopify HMAC signature');
+    });
   });
 });

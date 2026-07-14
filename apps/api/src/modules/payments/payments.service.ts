@@ -22,12 +22,12 @@ export class PaymentsService {
 
     if (type === 'payment') {
       const paymentId = String(notificationData.id);
-      this.logger.log(`Payment notification received: ${paymentId}`);
+      this.logger.log(`Payment notification: id=${paymentId}`);
 
       const paymentInfo = await this.mercadoPagoService.getPayment(paymentId);
       const { status, metadata, payment_method_id } = paymentInfo;
 
-      this.logger.log(`Payment ${paymentId} status: ${status}`);
+      this.logger.log(`Payment ${paymentId} status=${status}`);
 
       if (!metadata || !metadata.orderId) {
         this.logger.warn(`Payment ${paymentId} has no orderId in metadata`);
@@ -62,6 +62,11 @@ export class PaymentsService {
         });
       }
 
+      if (paymentRecord.status === 'PAID') {
+        this.logger.log(`Payment ${paymentId} already processed as PAID, skipping`);
+        return { received: true };
+      }
+
       if (status === 'approved') {
         await this.prisma.$transaction([
           this.prisma.payment.update({
@@ -73,7 +78,7 @@ export class PaymentsService {
             data: { paymentStatus: 'PAID', paidAt: new Date(), status: 'CONFIRMED' },
           }),
         ]);
-        this.logger.log(`Order ${orderId} marked as PAID`);
+        this.logger.log(`Order ${order.id} marked as PAID`);
         await this.telegram.notifyPaymentReceived(
           order.orderNumber,
           Number(order.total),
@@ -82,7 +87,7 @@ export class PaymentsService {
 
         // Trigger auto-fulfillment in background (don't block webhook response)
         this.autoFulfillment.fulfillStoreOrder(order.id).catch((err) => {
-          this.logger.error(`Auto-fulfillment failed for order ${order.id}:`, err);
+          this.logger.error(`Auto-fulfillment failed for order ${order.id}: ${err.message}`);
         });
 
         if (order.customerEmail) {
@@ -109,16 +114,18 @@ export class PaymentsService {
           });
         }
       } else if (status === 'rejected' || status === 'cancelled') {
-        await this.prisma.$transaction([
-          this.prisma.payment.update({
-            where: { id: paymentRecord.id },
-            data: { status: 'FAILED', errorMessage: `Payment ${status}` },
-          }),
-          this.prisma.order.update({
-            where: { id: order.id },
-            data: { paymentStatus: 'FAILED' },
-          }),
-        ]);
+        if ((paymentRecord.status as string) !== 'PAID') {
+          await this.prisma.$transaction([
+            this.prisma.payment.update({
+              where: { id: paymentRecord.id },
+              data: { status: 'FAILED', errorMessage: `Payment ${status}` },
+            }),
+            this.prisma.order.update({
+              where: { id: order.id },
+              data: { paymentStatus: 'FAILED' },
+            }),
+          ]);
+        }
         this.logger.warn(`Payment ${paymentId} ${status}`);
         await this.telegram.sendMessage(
           `<b>❌ Pago Rechazado</b>\n\n` +
@@ -127,10 +134,12 @@ export class PaymentsService {
             `Estado: ${status}`
         );
       } else if (status === 'pending' || status === 'in_process') {
-        await this.prisma.payment.update({
-          where: { id: paymentRecord.id },
-          data: { status: 'PENDING' },
-        });
+        if ((paymentRecord.status as string) !== 'PAID') {
+          await this.prisma.payment.update({
+            where: { id: paymentRecord.id },
+            data: { status: 'PENDING' },
+          });
+        }
       }
     }
 

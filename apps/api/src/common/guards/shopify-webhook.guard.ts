@@ -49,16 +49,13 @@ export class ShopifyWebhookGuard implements CanActivate {
     }
 
     // ── 2. Get the raw body ───────────────────────────────────────────────
-    // NestJS with rawBody: true stores it on request.rawBody
     const rawBody = (request as any).rawBody;
     if (!rawBody) {
-      // Fallback: stringify the parsed body (less secure but works without rawBody config)
-      this.logger.warn('Raw body not available — using JSON.stringify fallback. Enable rawBody in main.ts for production.');
+      this.logger.error('Webhook rejected: raw body not available. Enable rawBody in main.ts.');
+      throw new UnauthorizedException('Raw body not available for webhook verification');
     }
 
-    const bodyString = rawBody
-      ? rawBody.toString('utf8')
-      : JSON.stringify(request.body);
+    const bodyString = rawBody.toString('utf8');
 
     // ── 3. Compute HMAC ───────────────────────────────────────────────────
     const secretConfigs: { key: string; label: string }[] = [
@@ -100,24 +97,13 @@ export class ShopifyWebhookGuard implements CanActivate {
     }
 
     if (!isValid) {
-      const attempts = uniqueSecrets.map(
-        ({ value, label }) =>
-          `${label}:${crypto.createHmac('sha256', value).update(bodyString, 'utf8').digest('base64').substring(0, 8)}...`,
-      );
       this.logger.warn(
-        `Webhook HMAC INVALID — topic: ${topic}, shop: ${shopDomain}\n` +
-        `  Attempted: [${attempts.join(', ')}]\n` +
-        `  Received:  ${hmacHeader.substring(0, 8)}...`,
+        `Webhook HMAC INVALID — topic: ${topic}, shop: ${shopDomain}`,
       );
-
-      const nodeEnv = this.config.get<string>('NODE_ENV', 'development');
-      if (nodeEnv === 'production') {
-        throw new UnauthorizedException('Invalid Shopify HMAC signature');
-      }
-      this.logger.warn('HMAC guard ALLOWED despite mismatch (NODE_ENV != production)');
-    } else {
-      this.logger.log(`Webhook verified via ${matchedLabel} ✓ topic: ${topic}`);
+      throw new UnauthorizedException('Invalid Shopify HMAC signature');
     }
+
+    this.logger.log(`Webhook verified via ${matchedLabel} topic: ${topic}`);
 
     // ── 5. Optional: Verify shop domain is a valid Shopify store ──────────
     if (shopDomain && !shopDomain.endsWith('.myshopify.com')) {

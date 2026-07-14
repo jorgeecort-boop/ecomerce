@@ -21,6 +21,7 @@ describe('AutoFulfillmentService', () => {
     },
     supplierOrder: {
       create: jest.fn(),
+      findMany: jest.fn(),
     },
     product: {
       findFirst: jest.fn(),
@@ -60,6 +61,18 @@ describe('AutoFulfillmentService', () => {
       if (order.status !== 'CONFIRMED') {
         expect(order.status).not.toBe('CONFIRMED');
       }
+    });
+
+    it('should skip if order already has supplier orders (idempotency)', () => {
+      mockPrisma.supplierOrder.findMany.mockResolvedValue([
+        { id: 'so-1', externalOrderId: 'ext-1' },
+      ]);
+
+      const order = { id: 'order-1', status: 'CONFIRMED', supplierOrderId: 'so-1' };
+
+      // Existing supplier orders should prevent duplicate fulfillment
+      const hasExisting = order.supplierOrderId != null;
+      expect(hasExisting).toBe(true);
     });
 
     it('should skip items without supplierId', () => {

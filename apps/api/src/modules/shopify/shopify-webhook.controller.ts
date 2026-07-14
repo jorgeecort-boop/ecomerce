@@ -24,7 +24,7 @@ export class ShopifyWebhookController {
     @Headers('x-shopify-shop-domain') shopDomain: string,
   ) {
     this.logger.log(
-      `Order webhook ✓ topic=${topic} shop=${shopDomain} email=${body.email} order=#${body.order_number}`,
+      `Order webhook topic=${topic} shop=${shopDomain} order=#${body.order_number}`,
     );
 
     const result = await this.autoFulfillmentService.processNewOrder(body);
