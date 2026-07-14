@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
@@ -38,21 +39,11 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
         name: 'default',
         ttl: 60000,
         limit: 20,
-        skipIf: (context) => {
-          const req = context.switchToHttp().getRequest();
-          const url = req?.url || '';
-          return url === '/api/health' || url.startsWith('/api/health/');
-        },
       },
       {
         name: 'auth',
         ttl: 60000,
         limit: 5,
-        skipIf: (context) => {
-          const req = context.switchToHttp().getRequest();
-          const url = req?.url || '';
-          return url === '/api/health' || url.startsWith('/api/health/');
-        },
       },
     ]),
     CacheModule.register({
@@ -87,7 +78,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: AppThrottlerGuard,
     },
   ],
 })

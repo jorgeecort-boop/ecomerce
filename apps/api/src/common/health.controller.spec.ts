@@ -7,10 +7,11 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { HealthController } from './health.controller';
 import { PrismaService } from '../config/prisma.service';
+import { AppThrottlerGuard } from './guards/throttler.guard';
 
 describe('HealthController', () => {
   let app: INestApplication;
@@ -27,29 +28,19 @@ describe('HealthController', () => {
             name: 'default',
             ttl: 60000,
             limit: 20,
-            skipIf: (context) => {
-              const req = context.switchToHttp().getRequest();
-              const url = req?.url || '';
-              return url === '/api/health' || url.startsWith('/api/health/');
-            },
           },
           {
             name: 'auth',
             ttl: 60000,
             limit: 5,
-            skipIf: (context) => {
-              const req = context.switchToHttp().getRequest();
-              const url = req?.url || '';
-              return url === '/api/health' || url.startsWith('/api/health/');
-            },
           },
         ]),
       ],
       controllers: [HealthController],
       providers: [{ provide: PrismaService, useValue: mockPrisma }],
     })
-      .overrideGuard(ThrottlerGuard)
-      .useClass(ThrottlerGuard)
+      .overrideGuard(AppThrottlerGuard)
+      .useClass(AppThrottlerGuard)
       .compile();
 
     app = module.createNestApplication();
