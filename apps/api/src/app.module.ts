@@ -48,6 +48,11 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
         name: 'auth',
         ttl: 60000,
         limit: 5,
+        skipIf: (context) => {
+          const req = context.switchToHttp().getRequest();
+          const url = req?.url || '';
+          return url === '/api/health' || url.startsWith('/api/health/');
+        },
       },
     ]),
     CacheModule.register({
