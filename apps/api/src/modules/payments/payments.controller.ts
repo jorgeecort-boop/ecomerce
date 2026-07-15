@@ -21,12 +21,11 @@ export class PaymentsController {
 
   @Post('create-preference')
   @ApiOperation({ summary: 'Create a MercadoPago payment preference and pending order' })
-  async createPreference(
-    @Body() dto: any,
-  ) {
+  async createPreference(@Req() req: any) {
+    const dto = req.body;
     if (!dto || !dto.items) {
       throw new BadRequestException(
-        `[BODY-DEBUG] dto.items=${JSON.stringify(dto?.items?.constructor?.name)} keys=${dto ? Object.keys(dto).join(',') : 'null'}`
+        `[BODY] dto.items=${dto?.items}, keys=${dto ? Object.keys(dto).join(',') : 'dto-null'}`
       );
     }
     try {
