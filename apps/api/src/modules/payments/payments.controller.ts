@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../../config/prisma.service';
@@ -20,6 +20,7 @@ export class PaymentsController {
   ) {}
 
   @Post('create-preference')
+  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: false }))
   @ApiOperation({ summary: 'Create a MercadoPago payment preference and pending order' })
   async createPreference(
     @Body()
