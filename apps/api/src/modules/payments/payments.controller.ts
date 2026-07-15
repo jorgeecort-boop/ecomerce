@@ -23,22 +23,9 @@ export class PaymentsController {
   @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: false }))
   @ApiOperation({ summary: 'Create a MercadoPago payment preference and pending order' })
   async createPreference(
-    @Body()
-    dto: {
-      storeSlug: string;
-      items: Array<{ productId: string; price: number; quantity: number; title?: string }>;
-      customerEmail: string;
-      customerPhone?: string;
-      shippingAddress: Record<string, any>;
-      subtotal: number;
-      shippingCost: number;
-      tax: number;
-      total: number;
-      currency?: string;
-      notes?: string;
-      couponCode?: string;
-    }
+    @Req() req: any,
   ) {
+    const dto = req.body;
     try {
       // [STEP 1] product lookup
       let dbProducts: any[];
