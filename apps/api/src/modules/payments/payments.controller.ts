@@ -121,8 +121,10 @@ export class PaymentsController {
     } catch (e) {
       if (e instanceof BadRequestException) throw e;
       const error = e as Error;
-      this.logger.error(`Failed to create preference: ${error.message}`);
-      throw new BadRequestException('Failed to create payment preference');
+      this.logger.error(`Failed to create preference: ${error.message}`, error.stack);
+      throw new BadRequestException(
+        `Failed to create payment preference: ${error.message}`,
+      );
     }
   }
 
