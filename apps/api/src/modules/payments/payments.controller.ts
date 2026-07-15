@@ -31,7 +31,7 @@ export class PaymentsController {
       let dbProducts: any[];
       try {
         dbProducts = await this.prisma.product.findMany({
-          where: { id: { in: dto.items.map((i) => i.productId) } },
+          where: { id: { in: dto.items.map((i: any) => i.productId) } },
           select: { id: true, price: true, title: true, inventory: true },
         });
       } catch (stepErr: any) {
@@ -46,7 +46,7 @@ export class PaymentsController {
       }
 
       const dbSubtotal = dto.items.reduce(
-        (sum, item) => sum + (priceMap.get(item.productId)?.price ?? 0) * item.quantity,
+        (sum: number, item: any) => sum + (priceMap.get(item.productId)?.price ?? 0) * item.quantity,
         0,
       );
       const expectedTotal = dbSubtotal + (dto.shippingCost || 0) + (dto.tax || 0);
@@ -62,7 +62,7 @@ export class PaymentsController {
       try {
         order = await this.ordersService.createGuestOrder({
           storeSlug: dto.storeSlug,
-          items: dto.items.map((item) => {
+          items: dto.items.map((item: any) => {
             const db = priceMap.get(item.productId);
             return {
               productId: item.productId,
@@ -90,7 +90,7 @@ export class PaymentsController {
       // [STEP 4] corrected items
       let correctedItems: any[];
       try {
-        correctedItems = dto.items.map((item) => {
+        correctedItems = dto.items.map((item: any) => {
           const db = priceMap.get(item.productId);
           return {
             productId: item.productId,
