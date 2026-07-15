@@ -39,10 +39,16 @@ export class PaymentsController {
     }
   ) {
     try {
-      const dbProducts = await this.prisma.product.findMany({
-        where: { id: { in: dto.items.map((i) => i.productId) } },
-        select: { id: true, price: true, title: true, inventory: true },
-      });
+      // [STEP 1] product lookup
+      let dbProducts: any[];
+      try {
+        dbProducts = await this.prisma.product.findMany({
+          where: { id: { in: dto.items.map((i) => i.productId) } },
+          select: { id: true, price: true, title: true, inventory: true },
+        });
+      } catch (stepErr: any) {
+        throw new Error(`[STEP1-products] ${stepErr.message}`);
+      }
 
       const priceMap = new Map(dbProducts.map((p) => [p.id, { price: Number(p.price), title: p.title }]));
       for (const item of dto.items) {
@@ -63,9 +69,40 @@ export class PaymentsController {
         );
       }
 
-      const order = await this.ordersService.createGuestOrder({
-        storeSlug: dto.storeSlug,
-        items: dto.items.map((item) => {
+      // [STEP 3] create guest order
+      let order: any;
+      try {
+        order = await this.ordersService.createGuestOrder({
+          storeSlug: dto.storeSlug,
+          items: dto.items.map((item) => {
+            const db = priceMap.get(item.productId);
+            return {
+              productId: item.productId,
+              title: db?.title || item.title,
+              price: db?.price ?? 0,
+              quantity: item.quantity,
+            };
+          }),
+          customerEmail: dto.customerEmail,
+          customerPhone: dto.customerPhone,
+          shippingAddress: dto.shippingAddress,
+          subtotal: dbSubtotal,
+          shippingCost: dto.shippingCost,
+          tax: dto.tax,
+          total: expectedTotal,
+          currency: dto.currency || 'COP',
+          paymentStatus: 'PENDING',
+          notes: dto.notes,
+          couponCode: dto.couponCode,
+        });
+      } catch (stepErr: any) {
+        throw new Error(`[STEP3-order] ${stepErr.message}`);
+      }
+
+      // [STEP 4] corrected items
+      let correctedItems: any[];
+      try {
+        correctedItems = dto.items.map((item) => {
           const db = priceMap.get(item.productId);
           return {
             productId: item.productId,
@@ -73,43 +110,30 @@ export class PaymentsController {
             price: db?.price ?? 0,
             quantity: item.quantity,
           };
-        }),
-        customerEmail: dto.customerEmail,
-        customerPhone: dto.customerPhone,
-        shippingAddress: dto.shippingAddress,
-        subtotal: dbSubtotal,
-        shippingCost: dto.shippingCost,
-        tax: dto.tax,
-        total: expectedTotal,
-        currency: dto.currency || 'COP',
-        paymentStatus: 'PENDING',
-        notes: dto.notes,
-        couponCode: dto.couponCode,
-      });
+        });
+      } catch (stepErr: any) {
+        throw new Error(`[STEP4-correctedItems] ${stepErr.message}`);
+      }
 
-      const correctedItems = dto.items.map((item) => {
-        const db = priceMap.get(item.productId);
-        return {
-          productId: item.productId,
-          title: db?.title || item.title,
-          price: db?.price ?? 0,
-          quantity: item.quantity,
-        };
-      });
+      // [STEP 5] create MercadoPago preference
+      this.logger.log(`Calling createPreference with ${correctedItems.length} corrected items`);
 
-      this.logger.log(`Calling createPreference with ${correctedItems.length} corrected items, email=${dto.customerEmail}, total=${expectedTotal}, orderId=${order.id}`);
-
-      const result = await this.mercadoPagoService.createPreference(
-        correctedItems,
-        dto.customerEmail,
-        expectedTotal,
-        dto.currency || 'COP',
-        {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          storeSlug: dto.storeSlug,
-        }
-      );
+      let result: any;
+      try {
+        result = await this.mercadoPagoService.createPreference(
+          correctedItems,
+          dto.customerEmail,
+          expectedTotal,
+          dto.currency || 'COP',
+          {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            storeSlug: dto.storeSlug,
+          }
+        );
+      } catch (stepErr: any) {
+        throw new Error(`[STEP5-mp] ${stepErr.message}`);
+      }
 
       this.logger.log(`Order ${order.orderNumber} created, preference ${result.preferenceId}`);
 
