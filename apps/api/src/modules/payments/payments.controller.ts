@@ -27,8 +27,11 @@ export class PaymentsController {
       try { dto = JSON.parse(req.rawBody.toString()); } catch {}
     }
     if (!dto || !dto.items) {
+      const rawInfo = req.rawBody
+        ? `rawBody(${req.rawBody.length}B): "${req.rawBody.toString().substring(0, 200)}"`
+        : 'no-rawBody';
       throw new BadRequestException(
-        `[BODY] dto.items=${dto?.items}, keys=${dto ? Object.keys(dto).join(',') : 'dto-null'}`
+        `[BODY] items=${dto?.items}, bodyKeys=${dto ? Object.keys(dto).join(',') : 'null'}, ${rawInfo}`
       );
     }
     try {
