@@ -22,29 +22,12 @@ export class PaymentsController {
   @Post('create-preference')
   @ApiOperation({ summary: 'Create a MercadoPago payment preference and pending order' })
   async createPreference(@Req() req: any) {
-    let dto = req.body;
-    if ((!dto || !dto.items) && req.rawBody) {
-      try { dto = JSON.parse(req.rawBody.toString()); } catch {}
-    }
-    if (!dto || !dto.items) {
-      const rawInfo = req.rawBody
-        ? `rawBody(${req.rawBody.length}B): "${req.rawBody.toString().substring(0, 200)}"`
-        : 'no-rawBody';
-      throw new BadRequestException(
-        `[BODY] items=${dto?.items}, bodyKeys=${dto ? Object.keys(dto).join(',') : 'null'}, ${rawInfo}`
-      );
-    }
+    const dto = req.body;
     try {
-      // [STEP 1] product lookup
-      let dbProducts: any[];
-      try {
-        dbProducts = await this.prisma.product.findMany({
-          where: { id: { in: dto.items.map((i: any) => i.productId) } },
-          select: { id: true, price: true, title: true, inventory: true },
-        });
-      } catch (stepErr: any) {
-        throw new Error(`[STEP1-products] ${stepErr.message}`);
-      }
+      const dbProducts = await this.prisma.product.findMany({
+        where: { id: { in: dto.items.map((i: any) => i.productId) } },
+        select: { id: true, price: true, title: true, inventory: true },
+      });
 
       const priceMap = new Map(dbProducts.map((p) => [p.id, { price: Number(p.price), title: p.title }]));
       for (const item of dto.items) {
@@ -65,40 +48,9 @@ export class PaymentsController {
         );
       }
 
-      // [STEP 3] create guest order
-      let order: any;
-      try {
-        order = await this.ordersService.createGuestOrder({
-          storeSlug: dto.storeSlug,
-          items: dto.items.map((item: any) => {
-            const db = priceMap.get(item.productId);
-            return {
-              productId: item.productId,
-              title: db?.title || item.title,
-              price: db?.price ?? 0,
-              quantity: item.quantity,
-            };
-          }),
-          customerEmail: dto.customerEmail,
-          customerPhone: dto.customerPhone,
-          shippingAddress: dto.shippingAddress,
-          subtotal: dbSubtotal,
-          shippingCost: dto.shippingCost,
-          tax: dto.tax,
-          total: expectedTotal,
-          currency: dto.currency || 'COP',
-          paymentStatus: 'PENDING',
-          notes: dto.notes,
-          couponCode: dto.couponCode,
-        });
-      } catch (stepErr: any) {
-        throw new Error(`[STEP3-order] ${stepErr.message}`);
-      }
-
-      // [STEP 4] corrected items
-      let correctedItems: any[];
-      try {
-        correctedItems = dto.items.map((item: any) => {
+      const order = await this.ordersService.createGuestOrder({
+        storeSlug: dto.storeSlug,
+        items: dto.items.map((item: any) => {
           const db = priceMap.get(item.productId);
           return {
             productId: item.productId,
@@ -106,30 +58,41 @@ export class PaymentsController {
             price: db?.price ?? 0,
             quantity: item.quantity,
           };
-        });
-      } catch (stepErr: any) {
-        throw new Error(`[STEP4-correctedItems] ${stepErr.message}`);
-      }
+        }),
+        customerEmail: dto.customerEmail,
+        customerPhone: dto.customerPhone,
+        shippingAddress: dto.shippingAddress,
+        subtotal: dbSubtotal,
+        shippingCost: dto.shippingCost,
+        tax: dto.tax,
+        total: expectedTotal,
+        currency: dto.currency || 'COP',
+        paymentStatus: 'PENDING',
+        notes: dto.notes,
+        couponCode: dto.couponCode,
+      });
 
-      // [STEP 5] create MercadoPago preference
-      this.logger.log(`Calling createPreference with ${correctedItems.length} corrected items`);
+      const correctedItems = dto.items.map((item: any) => {
+        const db = priceMap.get(item.productId);
+        return {
+          productId: item.productId,
+          title: db?.title || item.title,
+          price: db?.price ?? 0,
+          quantity: item.quantity,
+        };
+      });
 
-      let result: any;
-      try {
-        result = await this.mercadoPagoService.createPreference(
-          correctedItems,
-          dto.customerEmail,
-          expectedTotal,
-          dto.currency || 'COP',
-          {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            storeSlug: dto.storeSlug,
-          }
-        );
-      } catch (stepErr: any) {
-        throw new Error(`[STEP5-mp] ${stepErr.message}`);
-      }
+      const result = await this.mercadoPagoService.createPreference(
+        correctedItems,
+        dto.customerEmail,
+        expectedTotal,
+        dto.currency || 'COP',
+        {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          storeSlug: dto.storeSlug,
+        }
+      );
 
       this.logger.log(`Order ${order.orderNumber} created, preference ${result.preferenceId}`);
 

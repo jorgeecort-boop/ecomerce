@@ -29,12 +29,6 @@ export class MercadoPagoService {
     currency: string,
     metadata?: Record<string, any>
   ) {
-    if (!Array.isArray(items) || items.length === 0) {
-      throw new Error(
-        `createPreference received invalid items: type=${typeof items}, isArray=${Array.isArray(items)}`
-      );
-    }
-
     const preference = new Preference(this.client);
     const storeSlug = metadata?.storeSlug || '';
     const webUrl = this.configService.get('WEB_URL') || 'http://localhost:3000';
