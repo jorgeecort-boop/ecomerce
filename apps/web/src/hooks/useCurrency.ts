@@ -4,6 +4,8 @@
  * Features:
  * - Auto-detects visitor's currency via backend IP detection (cached)
  * - Fetches exchange rate from USD (the store's base currency)
+ * - Supports store-level base currency via `storeCurrency` param
+ * - If store currency matches visitor currency, no conversion is applied
  * - Formats prices in the visitor's local currency
  * - Caches the rate in sessionStorage to avoid repeated API calls
  */
@@ -11,7 +13,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_URL } from '@ecomerce/utils';
 
-const BASE_CURRENCY = 'USD';
+const DEFAULT_BASE_CURRENCY = 'USD';
 
 // Supported currencies with symbols
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -56,6 +58,15 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   NZD: 'NZ$',
 };
 
+const COP_LOCALE: Record<string, string> = {
+  COP: 'es-CO',
+  ARS: 'es-AR',
+  MXN: 'es-MX',
+  CLP: 'es-CL',
+  PEN: 'es-PE',
+  BRL: 'pt-BR',
+};
+
 export interface CurrencyState {
   currency: string;
   symbol: string;
@@ -70,29 +81,31 @@ export interface CurrencyState {
 // Session-level cache: { currency: rate }
 const rateCache: Record<string, number> = {};
 
-export function useCurrency(): CurrencyState {
-  const [currency, setCurrencyState] = useState<string>('USD');
+export function useCurrency(storeCurrency?: string): CurrencyState {
+  const baseCurrency = storeCurrency || DEFAULT_BASE_CURRENCY;
+  const [currency, setCurrencyState] = useState<string>(baseCurrency);
   const [rate, setRate] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>([BASE_CURRENCY]);
+  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>([baseCurrency]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Fetch the exchange rate from USD → target currency
+  // Fetch the exchange rate from baseCurrency → target currency
   const fetchRate = useCallback(async (targetCurrency: string) => {
-    if (targetCurrency === BASE_CURRENCY) {
+    if (targetCurrency === baseCurrency) {
       setRate(1);
       setIsLoading(false);
       return;
     }
 
     // Check cache first
-    if (rateCache[targetCurrency]) {
-      setRate(rateCache[targetCurrency]);
+    const cacheKey = `${baseCurrency}:${targetCurrency}`;
+    if (rateCache[cacheKey]) {
+      setRate(rateCache[cacheKey]);
       setIsLoading(false);
       return;
     }
@@ -103,17 +116,28 @@ export function useCurrency(): CurrencyState {
       if (!res.ok) throw new Error('Rate fetch failed');
       const json = await res.json();
       const data = json.data || json;
-      const fetchedRate = data.rates[targetCurrency];
+
+      let fetchedRate: number;
+
+      if (baseCurrency === 'USD') {
+        fetchedRate = data.rates?.[targetCurrency];
+      } else {
+        const baseToUsd = data.rates?.[baseCurrency];
+        const usdToTarget = data.rates?.[targetCurrency];
+        if (!baseToUsd || !usdToTarget) throw new Error('Currency not found');
+        fetchedRate = usdToTarget / baseToUsd;
+      }
+
       if (!fetchedRate) throw new Error('Currency not found');
-      rateCache[targetCurrency] = fetchedRate;
+      rateCache[cacheKey] = fetchedRate;
       setRate(fetchedRate);
     } catch (err) {
       setError('Could not load exchange rate');
-      setRate(1); // fallback to USD
+      setRate(1);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [baseCurrency]);
 
   // Load available currencies from backend (cached)
   useEffect(() => {
@@ -122,15 +146,14 @@ export function useCurrency(): CurrencyState {
       .then((json) => {
         const data = json.data || json;
         const keys = Object.keys(data.rates || {});
-        // Add USD since it's the base
         if (!keys.includes('USD')) keys.unshift('USD');
+        if (!keys.includes(baseCurrency)) keys.unshift(baseCurrency);
         setAvailableCurrencies(keys.sort());
       })
       .catch(() => {
-        // Fallback: show common currencies
         setAvailableCurrencies(Object.keys(CURRENCY_SYMBOLS).sort());
       });
-  }, []);
+  }, [baseCurrency]);
 
   // Auto-detect visitor's currency via backend IP detection
   useEffect(() => {
@@ -148,15 +171,15 @@ export function useCurrency(): CurrencyState {
       .then((r) => r.json())
       .then((json) => {
         const data = json.data || json;
-        const detected = data?.suggestedCurrency ?? 'USD';
+        const detected = data?.suggestedCurrency ?? baseCurrency;
         sessionStorage.setItem('detected_currency', detected);
         setCurrencyState(detected);
         fetchRate(detected);
       })
       .catch(() => {
-        setIsLoading(false); // stay on USD
+        setIsLoading(false);
       });
-  }, [fetchRate]);
+  }, [fetchRate, baseCurrency]);
 
   // Manual currency switcher
   const setCurrency = useCallback(
@@ -168,21 +191,24 @@ export function useCurrency(): CurrencyState {
     [fetchRate]
   );
 
-  // Format a USD amount into the visitor's currency
+  // Format an amount in the store's base currency into the visitor's currency
   const format = useCallback(
-    (amountUSD: number): string => {
-      const converted = amountUSD * rate;
+    (amount: number): string => {
+      const converted = amount * rate;
       const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
 
-      // Skip Intl on server to avoid hydration mismatch
       if (!mounted) return `${symbol}${converted.toFixed(2)}`;
 
       try {
-        return new Intl.NumberFormat('en-US', {
+        const locale = COP_LOCALE[currency] || 'en-US';
+        const minDigits = currency === 'JPY' || currency === 'KRW' ? 0 : (currency === 'COP' ? 0 : 2);
+        const maxDigits = currency === 'JPY' || currency === 'KRW' ? 0 : (currency === 'COP' ? 0 : 2);
+
+        return new Intl.NumberFormat(locale, {
           style: 'currency',
           currency,
-          minimumFractionDigits: currency === 'JPY' || currency === 'KRW' ? 0 : 2,
-          maximumFractionDigits: currency === 'JPY' || currency === 'KRW' ? 0 : 2,
+          minimumFractionDigits: minDigits,
+          maximumFractionDigits: maxDigits,
         }).format(converted);
       } catch {
         return `${symbol}${converted.toFixed(2)}`;

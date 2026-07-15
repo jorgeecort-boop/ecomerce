@@ -117,4 +117,43 @@ export class EmailService {
       html,
     });
   }
+
+  async sendShippingConfirmation(params: {
+    to: string;
+    customerName: string;
+    orderNumber: string;
+    trackingNumber: string;
+    trackingUrl?: string;
+  }): Promise<boolean> {
+    const trackingLink = params.trackingUrl
+      ? `<p style="text-align:center;margin-top:20px">
+          <a href="${params.trackingUrl}" style="display:inline-block;padding:12px 32px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">
+            Rastrear pedido
+          </a>
+        </p>`
+      : '';
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#222">
+        <div style="text-align:center;padding:24px 0;border-bottom:2px solid #059669">
+          <h1 style="color:#059669;margin:0">¡Tu pedido va en camino!</h1>
+        </div>
+        <p style="font-size:16px">Hola ${params.customerName},</p>
+        <p>Tu pedido <strong>${params.orderNumber}</strong> ha sido enviado.</p>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:16px 0">
+          <p style="margin:0;font-size:15px"><strong>Número de guía:</strong> ${params.trackingNumber}</p>
+        </div>
+        ${trackingLink}
+        <p style="color:#666;font-size:13px;margin-top:32px;text-align:center">
+          El tiempo de entrega estimado es de 3-5 días hábiles.<br>
+          Puedes rastrear tu pedido en cualquier momento.
+        </p>
+      </div>`;
+
+    return this.send({
+      to: params.to,
+      subject: `Tu pedido #${params.orderNumber} va en camino`,
+      html,
+    });
+  }
 }

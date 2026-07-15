@@ -24,6 +24,7 @@ interface CheckoutForm {
   stateProvince: string;
   postalCode: string;
   country: string;
+  orderNotes: string;
 }
 
 const COUNTRIES = [
@@ -65,6 +66,7 @@ const EMPTY_FORM: CheckoutForm = {
   stateProvince: '',
   postalCode: '',
   country: 'Colombia',
+  orderNotes: '',
 };
 
 function formatCurrency(amount: number, currency: string) {
@@ -75,7 +77,7 @@ function formatCurrency(amount: number, currency: string) {
 export default function CheckoutPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const searchParams = useSearchParams();
-  const { format, currency } = useCurrency();
+  const { format, currency } = useCurrency('COP');
 
   const [step, setStep] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -84,6 +86,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
   const [isValidatingShipping, setIsValidatingShipping] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<{ orderId: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
   useEffect(() => {
     const itemsParam = searchParams.get('items');
@@ -98,10 +106,56 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
     }
   }, [searchParams]);
 
+  const [storeId, setStoreId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/stores/slug/${slug}`, { signal: AbortSignal.timeout(8000) })
+      .then((r) => r.json())
+      .then((json) => {
+        const data = json.data || json;
+        if (data.id) setStoreId(data.id);
+      })
+      .catch(() => {});
+  }, [slug]);
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim() || !storeId) return;
+
+    setCouponValidating(true);
+    setCouponMessage(null);
+    setCouponDiscount(0);
+    setAppliedCoupon(null);
+
+    try {
+      const res = await fetch(`${API_URL}/coupons/store/${storeId}/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim(), orderTotal: subtotal }),
+      });
+
+      const json = await res.json();
+      const data = json.data || json;
+
+      if (data.valid) {
+        setCouponDiscount(data.discountAmount);
+        setAppliedCoupon(couponCode.trim());
+        setCouponMessage(`¡Cupón aplicado! Ahorras ${format(data.discountAmount)}`);
+      } else {
+        setCouponMessage(data.message || 'Cupón inválido');
+      }
+    } catch {
+      setCouponMessage('Error al validar el cupón');
+    } finally {
+      setCouponValidating(false);
+    }
+  };
+
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = subtotal > 50 ? 0 : 4.99;
+  const FREE_SHIPPING_THRESHOLD = 200000;
+  const FLAT_SHIPPING_COST = 19900;
+  const shipping = subtotal > FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_COST;
   const tax = subtotal * 0.19;
-  const total = subtotal + shipping + tax;
+  const total = subtotal + shipping + tax - couponDiscount;
 
   const updateQty = (id: string, qty: number) => {
     if (qty <= 0) {
@@ -174,6 +228,8 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
           tax,
           total,
           currency: 'COP',
+          ...(appliedCoupon && { couponCode: appliedCoupon }),
+          ...(form.orderNotes.trim() && { notes: form.orderNotes.trim() }),
         }),
       });
 
@@ -509,6 +565,18 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                     ))}
                   </select>
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Notas del pedido (opcional)
+                  </label>
+                  <textarea
+                    value={form.orderNotes}
+                    onChange={(e) => setForm({ ...form, orderNotes: e.target.value })}
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    rows={2}
+                    placeholder="Ej: Entregar en portería, llamar antes de llegar..."
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 mt-6">
@@ -591,6 +659,45 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
               ))}
             </div>
 
+            <div className="border-t dark:border-gray-700 pt-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value.toUpperCase());
+                    if (appliedCoupon) {
+                      setAppliedCoupon(null);
+                      setCouponDiscount(0);
+                      setCouponMessage(null);
+                    }
+                  }}
+                  placeholder="Código de descuento"
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-xs bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!!appliedCoupon}
+                />
+                <button
+                  type="button"
+                  onClick={validateCoupon}
+                  disabled={couponValidating || !couponCode.trim() || !!appliedCoupon}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                >
+                  {couponValidating ? '...' : appliedCoupon ? '✓' : 'Aplicar'}
+                </button>
+              </div>
+              {couponMessage && (
+                <p
+                  className={`text-xs mt-2 ${
+                    appliedCoupon
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-500 dark:text-red-400'
+                  }`}
+                >
+                  {couponMessage}
+                </p>
+              )}
+            </div>
+
             <div className="border-t dark:border-gray-700 pt-3 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
@@ -605,13 +712,21 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                       : 'text-gray-900 dark:text-white'
                   }
                 >
-                  {shipping === 0 ? 'Free 🎉' : format(shipping)}
+                  {shipping === 0 ? 'Gratis 🎉' : format(shipping)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Tax (19%)</span>
                 <span className="text-gray-900 dark:text-white">{format(tax)}</span>
               </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-600 dark:text-green-400">Descuento</span>
+                  <span className="text-green-600 dark:text-green-400 font-medium">
+                    −{format(couponDiscount)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="border-t dark:border-gray-700 pt-3 mt-3 flex justify-between items-center">

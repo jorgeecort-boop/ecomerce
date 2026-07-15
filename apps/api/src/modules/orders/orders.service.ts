@@ -289,6 +289,70 @@ export class OrdersService {
     return { valid: true };
   }
 
+  async trackByOrderNumber(
+    orderNumber: string,
+    email: string,
+  ): Promise<{
+    orderNumber: string;
+    status: string;
+    statusLabel: string;
+    paymentStatus: string;
+    total: number;
+    currency: string;
+    createdAt: string;
+    items: Array<{ title: string; quantity: number; price: number }>;
+    trackingNumber?: string;
+    trackingUrl?: string;
+  }> {
+    if (!email) {
+      throw new BadRequestException('Email is required for order lookup');
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { orderNumber },
+      include: {
+        items: {
+          select: { title: true, quantity: true, price: true },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.customerEmail?.toLowerCase() !== email.toLowerCase()) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const STATUS_LABELS: Record<string, string> = {
+      PENDING: 'Pendiente',
+      CONFIRMED: 'Confirmado',
+      PROCESSING: 'Procesando',
+      SHIPPED: 'Enviado',
+      DELIVERED: 'Entregado',
+      CANCELLED: 'Cancelado',
+      REFUNDED: 'Reembolsado',
+    };
+
+    return {
+      orderNumber: order.orderNumber,
+      status: order.status,
+      statusLabel: STATUS_LABELS[order.status] || order.status,
+      paymentStatus: order.paymentStatus,
+      total: Number(order.total),
+      currency: order.currency,
+      createdAt: order.createdAt.toISOString(),
+      items: order.items.map((it) => ({
+        title: it.title || 'Producto',
+        quantity: it.quantity,
+        price: Number(it.price),
+      })),
+      trackingNumber: order.trackingNumber || undefined,
+      trackingUrl: order.trackingUrl || undefined,
+    };
+  }
+
   async createGuestOrder(dto: any): Promise<any> {
     const store = await this.prisma.store.findUnique({ where: { slug: dto.storeSlug } });
     if (!store) {

@@ -43,6 +43,24 @@ const seedPassword = process.env.SEED_ADMIN_PASSWORD || (() => { throw new Error
   });
   console.log('✅ Store:', store.slug);
 
+  // ─── SaraTech Store (producción) ──────────────────────────────
+  const saratechStore = await prisma.store.upsert({
+    where: { slug: 'saratech' },
+    update: { isActive: true },
+    create: {
+      name: 'SaraTech',
+      slug: 'saratech',
+      ownerId: admin.id,
+      isActive: true,
+      settings: {
+        currency: 'COP',
+        timezone: 'America/Bogota',
+        language: 'es',
+      },
+    },
+  });
+  console.log('✅ Store:', saratechStore.slug);
+
   // ─── Products ─────────────────────────────────────────────────
   const products = [
     {

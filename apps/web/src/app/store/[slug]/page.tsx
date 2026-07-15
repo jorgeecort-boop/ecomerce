@@ -108,6 +108,7 @@ export default async function StorePage({ params }: { params: { slug: string } }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const slug = params.slug;
+  const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || 'https://ecomerce-web.vercel.app';
 
   try {
     const storeRes = await fetch(`${API_URL}/stores/slug/${slug}`, {
@@ -132,7 +133,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         title: `${storeName} - Tech Gadgets`,
         description: storeDesc,
         type: 'website',
-        url: `/store/${store.slug || slug}`,
+        url: `${baseUrl}/store/${store.slug || slug}`,
         siteName: 'SaraTech',
         images: store.logoUrl ? [{ url: store.logoUrl, width: 256, height: 256 }] : [],
         locale: 'es_CO',

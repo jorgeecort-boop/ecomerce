@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../../config/prisma.service';
@@ -25,7 +25,7 @@ export class PaymentsController {
     @Body()
     dto: {
       storeSlug: string;
-      items: Array<{ productId: string; price: number; quantity: number }>;
+      items: Array<{ productId: string; price: number; quantity: number; title?: string }>;
       customerEmail: string;
       customerPhone?: string;
       shippingAddress: Record<string, any>;
@@ -34,46 +34,73 @@ export class PaymentsController {
       tax: number;
       total: number;
       currency?: string;
+      notes?: string;
+      couponCode?: string;
     }
   ) {
     try {
       const dbProducts = await this.prisma.product.findMany({
         where: { id: { in: dto.items.map((i) => i.productId) } },
-        select: { id: true, price: true, title: true },
+        select: { id: true, price: true, title: true, inventory: true },
       });
 
-      const foundIds = new Set(dbProducts.map((p) => p.id));
+      const priceMap = new Map(dbProducts.map((p) => [p.id, { price: Number(p.price), title: p.title }]));
       for (const item of dto.items) {
-        if (!foundIds.has(item.productId)) {
+        if (!priceMap.has(item.productId)) {
           throw new BadRequestException(`Product not found: ${item.productId}`);
         }
       }
 
-      const expectedTotal = dto.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
-        + (dto.shippingCost || 0) + (dto.tax || 0);
+      const dbSubtotal = dto.items.reduce(
+        (sum, item) => sum + (priceMap.get(item.productId)?.price ?? 0) * item.quantity,
+        0,
+      );
+      const expectedTotal = dbSubtotal + (dto.shippingCost || 0) + (dto.tax || 0);
 
-      if (Math.abs(dto.total - expectedTotal) > 0.01) {
-        throw new BadRequestException('Total amount mismatch');
+      if (Math.abs(dto.total - expectedTotal) > 10) {
+        throw new BadRequestException(
+          `Total amount mismatch. Expected: ${expectedTotal}, received: ${dto.total}`,
+        );
       }
 
       const order = await this.ordersService.createGuestOrder({
         storeSlug: dto.storeSlug,
-        items: dto.items,
+        items: dto.items.map((item) => {
+          const db = priceMap.get(item.productId);
+          return {
+            productId: item.productId,
+            title: db?.title || item.title,
+            price: db?.price ?? 0,
+            quantity: item.quantity,
+          };
+        }),
         customerEmail: dto.customerEmail,
         customerPhone: dto.customerPhone,
         shippingAddress: dto.shippingAddress,
-        subtotal: dto.subtotal,
+        subtotal: dbSubtotal,
         shippingCost: dto.shippingCost,
         tax: dto.tax,
-        total: dto.total,
+        total: expectedTotal,
         currency: dto.currency || 'COP',
         paymentStatus: 'PENDING',
+        notes: dto.notes,
+        couponCode: dto.couponCode,
+      });
+
+      const correctedItems = dto.items.map((item) => {
+        const db = priceMap.get(item.productId);
+        return {
+          productId: item.productId,
+          title: db?.title || item.title,
+          price: db?.price ?? 0,
+          quantity: item.quantity,
+        };
       });
 
       const result = await this.mercadoPagoService.createPreference(
-        dto.items,
+        correctedItems,
         dto.customerEmail,
-        dto.total,
+        expectedTotal,
         dto.currency || 'COP',
         {
           orderId: order.id,
@@ -97,6 +124,12 @@ export class PaymentsController {
       this.logger.error(`Failed to create preference: ${error.message}`);
       throw new BadRequestException('Failed to create payment preference');
     }
+  }
+
+  @Get('status/:orderNumber')
+  @ApiOperation({ summary: 'Check payment status for an order (polling fallback for webhook)' })
+  async getPaymentStatus(@Param('orderNumber') orderNumber: string) {
+    return this.paymentsService.checkAndSyncOrderStatus(orderNumber);
   }
 
   @Post('webhook')

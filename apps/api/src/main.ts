@@ -22,7 +22,7 @@ async function bootstrap() {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   };
   app.use('/api/health', healthResponse);
-  app.use('/api/health/ready', healthResponse);
+  app.use('/api/health/live', healthResponse);
 
   // Global prefix
   app.setGlobalPrefix('api');

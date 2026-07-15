@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { ShippoService } from './shippo.service';
+import { EmailService } from '../../common/email.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -21,7 +22,8 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
-    private readonly shippoService: ShippoService
+    private readonly shippoService: ShippoService,
+    private readonly emailService: EmailService,
   ) {}
 
   @Post()
@@ -54,6 +56,15 @@ export class OrdersController {
     }
   ) {
     return this.ordersService.validateGuestShipping(dto.storeSlug, dto.shippingAddress);
+  }
+
+  @Get('track/:orderNumber')
+  @ApiOperation({ summary: 'Public order tracking by order number and email' })
+  async trackOrder(
+    @Param('orderNumber') orderNumber: string,
+    @Query('email') email: string,
+  ) {
+    return this.ordersService.trackByOrderNumber(orderNumber, email);
   }
 
   @Get('my-orders')
@@ -125,12 +136,26 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() body: { supplierOrderId: string; trackingNumber: string; trackingUrl: string }
   ) {
-    return this.ordersService.updateAfterSupplierShip(
+    const order = await this.ordersService.updateAfterSupplierShip(
       id,
       body.supplierOrderId,
       body.trackingNumber,
       body.trackingUrl
     );
+
+    if (order.customerEmail) {
+      const ship = (order.shippingAddress as Record<string, unknown> | null) ?? null;
+      const customerName = ship?.['name'] ? String(ship['name']) : 'Cliente';
+      this.emailService.sendShippingConfirmation({
+        to: order.customerEmail,
+        customerName,
+        orderNumber: order.orderNumber,
+        trackingNumber: body.trackingNumber,
+        trackingUrl: body.trackingUrl,
+      }).catch(() => {});
+    }
+
+    return order;
   }
 
   // ── Tracking (Shippo) ─────────────────────────────────────────────────────

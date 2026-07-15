@@ -20,6 +20,7 @@ import Footer from '@/components/shared/Footer';
 import ScrollProgressBar from '@/components/features/kimi-store/ScrollProgressBar';
 import ScrollToTopButton from '@/components/features/kimi-store/ScrollToTopButton';
 import WhatsAppButton from '@/components/shared/WhatsAppButton';
+import { AbandonedCartBanner } from '@/components/shared/AbandonedCartBanner';
 import { AnimatePresence, motion } from 'framer-motion';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -40,10 +41,16 @@ const CATEGORY_MAP: Record<string, string[]> = {
 
 export default function StoreClient({ store, products }: StoreClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [sortBy, setSortBy] = useState('featured');
   const [visibleCount, setVisibleCount] = useState(12);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -54,7 +61,7 @@ export default function StoreClient({ store, products }: StoreClientProps) {
   const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
 
   const { user, token } = useAuth();
-  const { currency, format } = useCurrency();
+  const { currency, format } = useCurrency('COP');
   const { cart: cartItems, addItem, updateQuantity, removeItem } = useCart(store.slug);
 
   // Loading simulation
@@ -101,8 +108,8 @@ export default function StoreClient({ store, products }: StoreClientProps) {
     let result = [...products];
 
     // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       result = result.filter((p) =>
         p.title?.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q) ||
@@ -370,9 +377,10 @@ export default function StoreClient({ store, products }: StoreClientProps) {
       />
 
       <WhatsAppButton
-        phoneNumber="+573117313902"
-        message={`Hola SaraTech, estoy viendo la tienda ${store.name} y tengo una consulta.`}
+        phoneNumber="573117313902"
+        message="Hola SaraTech, necesito ayuda con un producto."
       />
+      <AbandonedCartBanner />
     </div>
   );
 }

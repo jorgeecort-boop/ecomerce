@@ -11,9 +11,14 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { HealthController } from './health.controller';
 import { AppThrottlerGuard } from './guards/throttler.guard';
+import { PrismaService } from '../config/prisma.service';
 
 describe('HealthController', () => {
   let app: INestApplication;
+
+  const mockPrisma = {
+    $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,6 +37,9 @@ describe('HealthController', () => {
         ]),
       ],
       controllers: [HealthController],
+      providers: [
+        { provide: PrismaService, useValue: mockPrisma },
+      ],
     })
       .overrideGuard(AppThrottlerGuard)
       .useClass(AppThrottlerGuard)
@@ -44,6 +52,7 @@ describe('HealthController', () => {
 
   afterEach(async () => {
     await app.close();
+    jest.clearAllMocks();
   });
 
   it('should return 200 for a single health check', async () => {
@@ -69,9 +78,34 @@ describe('HealthController', () => {
     });
   });
 
-  it('should return 200 for readiness check', async () => {
+  it('should return 200 for readiness check with DB connected', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/health/ready')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      status: 'ok',
+      database: 'connected',
+    });
+    expect(mockPrisma.$queryRaw).toHaveBeenCalled();
+  });
+
+  it('should return degraded when DB is disconnected', async () => {
+    mockPrisma.$queryRaw.mockRejectedValueOnce(new Error('DB down'));
+
+    const response = await request(app.getHttpServer())
+      .get('/api/health/ready')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      status: 'degraded',
+      database: 'disconnected',
+    });
+  });
+
+  it('should return 200 for live check (no DB)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/health/live')
       .expect(200);
 
     expect(response.body).toMatchObject({
