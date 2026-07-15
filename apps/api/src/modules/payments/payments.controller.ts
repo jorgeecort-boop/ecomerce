@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../../config/prisma.service';
@@ -20,17 +20,14 @@ export class PaymentsController {
   ) {}
 
   @Post('create-preference')
-  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: false }))
   @ApiOperation({ summary: 'Create a MercadoPago payment preference and pending order' })
   async createPreference(
-    @Req() req: any,
+    @Body() dto: any,
   ) {
-    const dto = req.body;
-    if (!dto || typeof dto !== 'object') {
-      throw new BadRequestException(`[BODY-DEBUG] req.body is ${typeof dto}: ${JSON.stringify(dto)}`);
-    }
-    if (!dto.items) {
-      throw new BadRequestException(`[BODY-DEBUG] dto.items missing. dto keys: ${Object.keys(dto).join(', ')}. Content-Type: ${req.headers?.['content-type']}`);
+    if (!dto || !dto.items) {
+      throw new BadRequestException(
+        `[BODY-DEBUG] dto.items=${JSON.stringify(dto?.items?.constructor?.name)} keys=${dto ? Object.keys(dto).join(',') : 'null'}`
+      );
     }
     try {
       // [STEP 1] product lookup
