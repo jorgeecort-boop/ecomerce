@@ -35,6 +35,8 @@ export class MercadoPagoService {
     const storeSlug = metadata?.storeSlug || '';
     const webUrl = this.configService.get('WEB_URL') || 'http://localhost:3000';
 
+    this.logger.log(`accessToken prefix: ${this.accessToken.substring(0, 12)}..., webUrl: ${webUrl}`);
+
     const isProduction = !webUrl.includes('localhost');
 
     const isCOP = currency === 'COP';
