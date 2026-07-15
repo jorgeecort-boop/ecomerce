@@ -37,13 +37,14 @@ export class MercadoPagoService {
 
     const isProduction = !webUrl.includes('localhost');
 
+    const isCOP = currency === 'COP';
     const body: any = {
       items: items.map((item) => ({
         id: item.productId,
         title: item.title || 'Producto',
-        unit_price: Number(item.price),
+        unit_price: isCOP ? Math.round(Number(item.price)) : Number(item.price),
         quantity: item.quantity,
-        currency_id: currency === 'COP' ? 'COP' : 'USD',
+        currency_id: isCOP ? 'COP' : 'USD',
       })),
       payer: {
         email: payerEmail,
