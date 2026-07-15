@@ -97,6 +97,8 @@ export class PaymentsController {
         };
       });
 
+      this.logger.log(`Calling createPreference with ${correctedItems.length} corrected items, email=${dto.customerEmail}, total=${expectedTotal}, orderId=${order.id}`);
+
       const result = await this.mercadoPagoService.createPreference(
         correctedItems,
         dto.customerEmail,
