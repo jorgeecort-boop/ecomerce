@@ -26,6 +26,12 @@ export class PaymentsController {
     @Req() req: any,
   ) {
     const dto = req.body;
+    if (!dto || typeof dto !== 'object') {
+      throw new BadRequestException(`[BODY-DEBUG] req.body is ${typeof dto}: ${JSON.stringify(dto)}`);
+    }
+    if (!dto.items) {
+      throw new BadRequestException(`[BODY-DEBUG] dto.items missing. dto keys: ${Object.keys(dto).join(', ')}. Content-Type: ${req.headers?.['content-type']}`);
+    }
     try {
       // [STEP 1] product lookup
       let dbProducts: any[];
