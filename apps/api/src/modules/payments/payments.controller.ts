@@ -119,6 +119,110 @@ export class PaymentsController {
     return this.paymentsService.checkAndSyncOrderStatus(orderNumber);
   }
 
+  @Post('process-payment')
+  @ApiOperation({ summary: 'Process a card payment via Checkout API (Payment Brick)' })
+  async processPayment(@Req() req: any) {
+    const dto = req.body;
+    try {
+      const dbProducts = await this.prisma.product.findMany({
+        where: { id: { in: dto.items.map((i: any) => i.productId) } },
+        select: { id: true, price: true, title: true, inventory: true },
+      });
+
+      const priceMap = new Map(dbProducts.map((p) => [p.id, { price: Number(p.price), title: p.title }]));
+      for (const item of dto.items) {
+        if (!priceMap.has(item.productId)) {
+          throw new BadRequestException(`Product not found: ${item.productId}`);
+        }
+      }
+
+      const dbSubtotal = dto.items.reduce(
+        (sum: number, item: any) => sum + (priceMap.get(item.productId)?.price ?? 0) * item.quantity,
+        0,
+      );
+      const shippingCost = dto.shippingCost || 0;
+      const tax = dto.tax || 0;
+      const expectedTotal = dbSubtotal + shippingCost + tax;
+      const total = expectedTotal - (dto.couponDiscount || 0);
+
+      if (Math.abs(dto.total - expectedTotal) > 10) {
+        throw new BadRequestException(
+          `Total amount mismatch. Expected: ${expectedTotal}, received: ${dto.total}`,
+        );
+      }
+
+      const order = await this.ordersService.createGuestOrder({
+        storeSlug: dto.storeSlug,
+        items: dto.items.map((item: any) => {
+          const db = priceMap.get(item.productId);
+          return {
+            productId: item.productId,
+            title: db?.title || item.title,
+            price: db?.price ?? 0,
+            quantity: item.quantity,
+          };
+        }),
+        customerEmail: dto.customerEmail,
+        customerPhone: dto.customerPhone,
+        shippingAddress: dto.shippingAddress,
+        subtotal: dbSubtotal,
+        shippingCost,
+        tax,
+        total,
+        currency: dto.currency || 'COP',
+        paymentStatus: 'PENDING',
+        notes: dto.notes,
+        couponCode: dto.couponCode,
+      });
+
+      const description = dto.items
+        .map((i: any) => `${i.title || 'Producto'} x${i.quantity}`)
+        .join(', ')
+        .substring(0, 256);
+
+      const paymentResult = await this.mercadoPagoService.createPayment({
+        transaction_amount: Math.round(total),
+        token: dto.cardToken,
+        description: description || 'Compra en SaraTech',
+        installments: dto.installments || 1,
+        payment_method_id: dto.paymentMethodId,
+        ...(dto.issuerId && { issuer_id: dto.issuerId }),
+        payer: {
+          email: dto.formData?.payer?.email || dto.customerEmail,
+          identification: {
+            type: dto.formData?.payer?.identification?.type || 'CC',
+            number: dto.formData?.payer?.identification?.number || dto.identificationNumber || '0000000000',
+          },
+        },
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          storeSlug: dto.storeSlug,
+        },
+      });
+
+      await this.paymentsService.processPaymentStatus(
+        String(paymentResult.id),
+        paymentResult,
+      );
+
+      return {
+        status: paymentResult.status,
+        statusDetail: paymentResult.status_detail,
+        paymentId: String(paymentResult.id),
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      };
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e;
+      const error = e as Error;
+      this.logger.error(`Failed to process payment: ${error.message}`, error.stack);
+      throw new BadRequestException(
+        `Failed to process payment: ${error.message}`,
+      );
+    }
+  }
+
   @Post('webhook')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Handle MercadoPago payment notifications' })

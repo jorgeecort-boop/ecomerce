@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
 import { API_URL } from '@ecomerce/utils';
+import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
 
 interface CartItem {
   id: string;
@@ -118,6 +119,13 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
       .catch(() => {});
   }, [slug]);
 
+  useEffect(() => {
+    const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+    if (publicKey) {
+      initMercadoPago(publicKey, { locale: 'es-CO' });
+    }
+  }, []);
+
   const validateCoupon = async () => {
     if (!couponCode.trim() || !storeId) return;
 
@@ -198,10 +206,15 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
   };
 
   const handleProceedToPayment = async () => {
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBrickSubmit = async (brickFormData: any) => {
     setIsSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/payments/create-preference`, {
+      const res = await fetch(`${API_URL}/payments/process-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -228,24 +241,31 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
           tax,
           total,
           currency: 'COP',
+          cardToken: brickFormData.formData?.token,
+          paymentMethodId: brickFormData.formData?.payment_method_id,
+          installments: brickFormData.formData?.installments || 1,
+          issuerId: brickFormData.formData?.issuer_id,
+          formData: brickFormData.formData,
+          identificationNumber:
+            brickFormData.formData?.payer?.identification?.number ||
+            '0000000000',
           ...(appliedCoupon && { couponCode: appliedCoupon }),
           ...(form.orderNotes.trim() && { notes: form.orderNotes.trim() }),
         }),
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Failed to create payment' }));
-        setError(err.message || 'Failed to initialize payment');
-        return;
-      }
-
       const data = await res.json();
-      const unwrapped = data.data || data;
+      const result = data.data || data;
 
-      // Redirect to MercadoPago checkout
-      window.location.href = unwrapped.sandboxInitPoint || unwrapped.initPoint;
+      if (result.status === 'approved') {
+        window.location.href = `/store/${slug}/checkout/success?orderNumber=${result.orderNumber}`;
+      } else if (result.status === 'rejected') {
+        window.location.href = `/store/${slug}/checkout/failure?orderNumber=${result.orderNumber}&status_detail=${result.statusDetail || ''}`;
+      } else {
+        window.location.href = `/store/${slug}/checkout/pending?orderNumber=${result.orderNumber}`;
+      }
     } catch {
-      setError('Failed to connect to payment service');
+      setError('Failed to process payment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -602,31 +622,58 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
               <h2 className="font-bold text-gray-900 dark:text-white text-lg mb-5">Payment</h2>
 
               <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-sm text-green-700 dark:text-green-400">
-                🔒 Secure payment powered by MercadoPago. Pay with PSE, Nequi, Daviplata, Efecty, or
-                card.
+                Pago seguro con MercadoPago. Tarjetas, PSE, Nequi, Daviplata, Efecty y más.
               </div>
 
-              <div className="flex gap-3">
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-600 dark:text-red-400">
+                  {error}
+                </div>
+              )}
+
+              {isSubmitting ? (
+                <div className="text-center py-12">
+                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    Procesando pago...
+                  </p>
+                </div>
+              ) : (
+                <div id="payment-brick-container">
+                  <Payment
+                    initialization={{
+                      amount: Math.round(total),
+                      payer: {
+                        email: form.email,
+                        firstName: form.firstName,
+                        lastName: form.lastName,
+                      },
+                    }}
+                    customization={{
+                      visual: {
+                        style: {
+                          theme: 'bootstrap',
+                        },
+                      },
+                      paymentMethods: {
+                        creditCard: 'all' as const,
+                        ticket: 'all' as const,
+                        maxInstallments: 12,
+                      },
+                    }}
+                    onSubmit={handleBrickSubmit}
+                    locale="es-CO"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-4">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => { setStep(2); setError(null); }}
                   className="px-5 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   ← Back
-                </button>
-                <button
-                  onClick={handleProceedToPayment}
-                  disabled={isSubmitting}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Connecting to MercadoPago...
-                    </>
-                  ) : (
-                    `Pay with MercadoPago · ${format(total)}`
-                  )}
                 </button>
               </div>
 

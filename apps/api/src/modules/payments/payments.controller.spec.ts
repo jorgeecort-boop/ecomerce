@@ -89,7 +89,7 @@ describe('PaymentsController', () => {
     it('should create preference when prices are valid', async () => {
       mockPrisma.product.findMany.mockResolvedValue(dbProducts);
 
-      const result = await controller.createPreference(validDto);
+      const result = await controller.createPreference({ body: validDto });
 
       expect(result.preferenceId).toBe('pref-001');
       expect(result.orderId).toBe('order-1');
@@ -110,7 +110,7 @@ describe('PaymentsController', () => {
         ],
       };
 
-      await expect(controller.createPreference(dto)).rejects.toThrow(BadRequestException);
+      await expect(controller.createPreference({ body: dto })).rejects.toThrow(BadRequestException);
       expect(mockOrdersService.createGuestOrder).not.toHaveBeenCalled();
     });
 
@@ -119,7 +119,7 @@ describe('PaymentsController', () => {
 
       const dto = { ...validDto, total: 1 };
 
-      await expect(controller.createPreference(dto)).rejects.toThrow(BadRequestException);
+      await expect(controller.createPreference({ body: dto })).rejects.toThrow(BadRequestException);
       expect(mockOrdersService.createGuestOrder).not.toHaveBeenCalled();
     });
 
@@ -128,7 +128,7 @@ describe('PaymentsController', () => {
 
       const dto = { ...validDto, items: [], subtotal: 0, tax: 0, shippingCost: 0, total: 0 };
 
-      const result = await controller.createPreference(dto);
+      const result = await controller.createPreference({ body: dto });
 
       expect(result.preferenceId).toBe('pref-001');
       expect(mockOrdersService.createGuestOrder).toHaveBeenCalled();

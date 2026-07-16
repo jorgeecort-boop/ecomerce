@@ -90,7 +90,7 @@ export class PaymentsService {
     }
   }
 
-  private async processPaymentStatus(paymentId: string, paymentInfo: any): Promise<{ received: boolean }> {
+  async processPaymentStatus(paymentId: string, paymentInfo: any): Promise<{ received: boolean }> {
     const { status, metadata, payment_method_id } = paymentInfo;
 
     this.logger.log(`Payment ${paymentId} status=${status}`);

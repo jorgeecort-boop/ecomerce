@@ -81,4 +81,51 @@ export class MercadoPagoService {
     const preference = new Preference(this.client);
     return preference.get({ preferenceId });
   }
+
+  async createPayment(paymentData: {
+    transaction_amount: number;
+    token: string;
+    description: string;
+    installments: number;
+    payment_method_id: string;
+    issuer_id?: string;
+    payer: {
+      email: string;
+      identification: { type: string; number: string };
+    };
+    metadata?: Record<string, any>;
+  }) {
+    const payment = new Payment(this.client);
+    const isCOP = paymentData.transaction_amount > 1000;
+
+    const body: any = {
+      transaction_amount: isCOP
+        ? Math.round(paymentData.transaction_amount)
+        : paymentData.transaction_amount,
+      token: paymentData.token,
+      description: paymentData.description,
+      installments: paymentData.installments,
+      payment_method_id: paymentData.payment_method_id,
+      payer: {
+        email: paymentData.payer.email,
+        identification: {
+          type: paymentData.payer.identification.type,
+          number: paymentData.payer.identification.number,
+        },
+      },
+      ...(paymentData.issuer_id && { issuer_id: paymentData.issuer_id }),
+      metadata: {
+        ...paymentData.metadata,
+        type: 'ecommerce_order',
+      },
+    };
+
+    const result = await payment.create({ body });
+
+    this.logger.log(
+      `Payment ${result.id}: ${result.status} (${result.status_detail})`,
+    );
+
+    return result;
+  }
 }
