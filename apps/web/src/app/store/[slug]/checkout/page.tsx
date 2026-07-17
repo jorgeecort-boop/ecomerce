@@ -476,10 +476,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-firstName" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     First Name *
                   </label>
                   <input
+                    id="checkout-firstName"
+                    name="firstName"
                     required
                     value={form.firstName}
                     onChange={(e) => setForm({ ...form, firstName: e.target.value })}
@@ -488,10 +490,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-lastName" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Last Name *
                   </label>
                   <input
+                    id="checkout-lastName"
+                    name="lastName"
                     required
                     value={form.lastName}
                     onChange={(e) => setForm({ ...form, lastName: e.target.value })}
@@ -500,10 +504,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-email" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email *
                   </label>
                   <input
+                    id="checkout-email"
+                    name="email"
                     type="email"
                     required
                     value={form.email}
@@ -513,10 +519,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-phone" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Phone
                   </label>
                   <input
+                    id="checkout-phone"
+                    name="phone"
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -525,10 +533,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-address" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Street Address *
                   </label>
                   <input
+                    id="checkout-address"
+                    name="address"
                     required
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -537,10 +547,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-city" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     City *
                   </label>
                   <input
+                    id="checkout-city"
+                    name="city"
                     required
                     value={form.city}
                     onChange={(e) => setForm({ ...form, city: e.target.value })}
@@ -549,10 +561,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-stateProvince" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     State / Province
                   </label>
                   <input
+                    id="checkout-stateProvince"
+                    name="stateProvince"
                     value={form.stateProvince}
                     onChange={(e) => setForm({ ...form, stateProvince: e.target.value })}
                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
@@ -560,10 +574,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-postalCode" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Postal Code *
                   </label>
                   <input
+                    id="checkout-postalCode"
+                    name="postalCode"
                     required
                     value={form.postalCode}
                     onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
@@ -572,10 +588,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-country" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Country *
                   </label>
                   <select
+                    id="checkout-country"
+                    name="country"
                     required
                     value={form.country}
                     onChange={(e) => setForm({ ...form, country: e.target.value })}
@@ -587,10 +605,12 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="checkout-orderNotes" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Notas del pedido (opcional)
                   </label>
                   <textarea
+                    id="checkout-orderNotes"
+                    name="orderNotes"
                     value={form.orderNotes}
                     onChange={(e) => setForm({ ...form, orderNotes: e.target.value })}
                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none"
