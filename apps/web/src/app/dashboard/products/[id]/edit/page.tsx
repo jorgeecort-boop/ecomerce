@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { API_URL } from '@ecomerce/utils';
@@ -243,11 +244,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           {form.imageUrl && (
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview:</p>
-              <img
+              <Image
                 src={form.imageUrl}
                 alt="Preview"
+                width={128}
+                height={128}
                 className="w-32 h-32 object-cover rounded-lg border dark:border-gray-600"
                 onError={(e) => (e.currentTarget.style.display = 'none')}
+                unoptimized
               />
             </div>
           )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
@@ -273,10 +274,13 @@ export default function ProductsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {product.imageUrl ? (
-                            <img
+                            <Image
                               src={product.imageUrl}
                               alt={product.title}
+                              width={40}
+                              height={40}
                               className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                              unoptimized
                             />
                           ) : (
                             <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">

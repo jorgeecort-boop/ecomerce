@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/auth-context';
 import { useShopify, SyncOrder, ShopifyStats } from '@/hooks/useShopify';
 import { API_URL } from '@ecomerce/utils';
@@ -534,11 +535,15 @@ export default function ShopifyDashboardPage() {
                     className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
                   >
                     {product.images?.[0]?.src ? (
-                      <img
-                        src={product.images[0].src}
-                        alt={product.title}
-                        className="w-full h-48 object-cover"
-                      />
+                      <div className="relative w-full h-48">
+                        <Image
+                          src={product.images[0].src}
+                          alt={product.title}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
                     ) : (
                       <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-3xl text-gray-300">
                         📦

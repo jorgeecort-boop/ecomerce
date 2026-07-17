@@ -8,8 +8,9 @@ jest.mock('next/image', () => ({
     alt,
     src,
     fill: _fill,
+    unoptimized: _unoptimized,
     ...props
-  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean }) => (
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; unoptimized?: boolean }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img alt={alt} src={typeof src === 'string' ? src : ''} {...props} />
   ),

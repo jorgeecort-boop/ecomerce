@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight, Headphones, Gamepad2, Watch, Video, Lightbulb, Cable } from 'lucide-react';
@@ -80,10 +81,12 @@ export default function CategoryGrid() {
                 className={`group relative overflow-hidden rounded-3xl cursor-pointer max-[768px]:col-span-1 max-[768px]:aspect-[16/9] ${cat.colSpan} ${cat.aspect}`}
               >
                 {/* Image */}
-                <img
+                <Image
                   src={cat.image}
                   alt={cat.name}
-                  className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-[1.15] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  fill
+                  className="object-cover scale-105 group-hover:scale-[1.15] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  unoptimized
                 />
 
                 {/* Overlay */}

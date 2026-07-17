@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
 import { API_URL } from '@ecomerce/utils';
@@ -406,12 +407,14 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
                   <div className="space-y-4 mb-6">
                     {cart.map((item) => (
                       <div key={item.id} className="flex gap-4 items-start">
-                        <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0">
+                        <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0 relative">
                           {item.imageUrl ? (
-                            <img
+                            <Image
                               src={item.imageUrl}
                               alt={item.title}
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
+                              unoptimized
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-2xl">

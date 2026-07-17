@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import Image from 'next/image';
 import * as THREE from 'three';
 import { ArrowRight } from 'lucide-react';
 
@@ -299,10 +300,13 @@ export default function ProductCarousel3D() {
                 <span className="absolute top-4 left-4 gradient-sale text-white text-xs font-medium px-2.5 py-1 rounded-lg">
                   -{product.discount}%
                 </span>
-                <img
+                <Image
                   src={product.image}
                   alt={product.name}
+                  width={300}
+                  height={300}
                   className="w-full aspect-square object-contain group-hover:scale-105 transition-transform duration-500"
+                  unoptimized
                 />
               </div>
               <div className="px-5 pb-5">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/auth-context';
 import { API_URL } from '@ecomerce/utils';
 
@@ -244,10 +245,12 @@ export default function SuppliersPage() {
               >
                 <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
                   {imageUrl ? (
-                    <img
+                    <Image
                       src={imageUrl}
                       alt={product.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
