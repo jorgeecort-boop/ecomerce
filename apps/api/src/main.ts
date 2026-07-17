@@ -9,9 +9,7 @@ import { SuccessInterceptor } from './common/interceptors/success.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule, {
-    rawBody: true, // Required for Shopify webhook HMAC verification
-  });
+  const app = await NestFactory.create(AppModule);
 
   // Security headers
   app.use(helmet());
@@ -23,6 +21,9 @@ async function bootstrap() {
   };
   app.use('/api/health', healthResponse);
   app.use('/api/health/live', healthResponse);
+
+  // Raw body for Shopify webhook HMAC verification (must be before global prefix)
+  app.use('/api/payments/webhook', require('express').raw({ type: 'application/json' }));
 
   // Global prefix
   app.setGlobalPrefix('api');
