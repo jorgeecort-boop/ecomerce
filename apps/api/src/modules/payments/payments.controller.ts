@@ -186,7 +186,7 @@ export class PaymentsController {
         description: description || 'Compra en SaraTech',
         installments: dto.installments || 1,
         payment_method_id: dto.paymentMethodId,
-        ...(dto.issuerId && { issuer_id: dto.issuerId }),
+        ...(dto.issuerId && { issuer_id: String(dto.issuerId) }),
         payer: {
           email: dto.formData?.payer?.email || dto.customerEmail,
           identification: {
@@ -227,12 +227,12 @@ export class PaymentsController {
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Handle MercadoPago payment notifications' })
   async handleWebhook(
-    @Body() body: any,
+    @Body() body: Record<string, unknown>,
     @Headers('x-signature') xSignature: string | undefined,
     @Headers('x-request-id') xRequestId: string | undefined,
-    @Req() req: any
+    @Req() req: { rawBody?: Buffer }
   ) {
-    this.logger.log(`Payment webhook received: id=${body?.data?.id || body?.id}`);
+    this.logger.log(`Payment webhook received: id=${(body?.data as Record<string, unknown>)?.id || body?.id}`);
 
     if (!xSignature) {
       this.logger.warn('Webhook rejected: missing x-signature header');
@@ -251,7 +251,7 @@ export class PaymentsController {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    const notification = body.type ? body : { type: body.topic, data: { id: body.id } };
+    const notification = body.type ? body : { type: body.topic, data: { id: (body as Record<string, unknown>).id } };
 
     return this.paymentsService.handlePaymentNotification(notification);
   }

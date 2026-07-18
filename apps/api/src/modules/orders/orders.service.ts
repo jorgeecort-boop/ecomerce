@@ -1,10 +1,33 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, OrderStatus, PaymentStatus } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { CouponsService } from '../coupons/coupons.service';
+
+type OrderWithItems = Prisma.OrderGetPayload<{
+  include: { items: true; store: { select: { id: true; name: true; slug: true } } };
+}>;
+type OrderWithFull = Prisma.OrderGetPayload<{
+  include: { items: { include: { product: true } }; store: true };
+}>;
+
+interface GuestOrderDto {
+  storeSlug: string;
+  items: Array<{ productId: string; quantity: number; price: number; title?: string }>;
+  subtotal?: number;
+  shippingCost?: number;
+  tax?: number;
+  total: number;
+  currency?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  shippingAddress?: Record<string, unknown>;
+  notes?: string;
+  couponCode?: string;
+  paymentStatus?: string;
+  paymentIntentId?: string;
+}
 
 @Injectable()
 export class OrdersService {
@@ -13,7 +36,7 @@ export class OrdersService {
     private couponsService: CouponsService,
   ) {}
 
-  async create(dto: CreateOrderDto): Promise<any> {
+  async create(dto: CreateOrderDto): Promise<OrderWithItems> {
     const store = await this.prisma.store.findUnique({ where: { id: dto.storeId } });
     if (!store) {
       throw new NotFoundException('Store not found');
@@ -52,8 +75,8 @@ export class OrdersService {
         total: new Prisma.Decimal(total),
         customerEmail: dto.customerEmail,
         customerPhone: dto.customerPhone,
-        shippingAddress: dto.shippingAddress as any,
-        billingAddress: dto.billingAddress as any,
+        shippingAddress: dto.shippingAddress as unknown as Prisma.InputJsonValue,
+        billingAddress: dto.billingAddress as unknown as Prisma.InputJsonValue,
         notes: dto.notes,
       },
       include: {
@@ -71,13 +94,13 @@ export class OrdersService {
     page = 1,
     limit = 20,
     status?: string,
-  ): Promise<{ data: any[]; total: number; page: number; totalPages: number }> {
+  ) {
     const store = await this.prisma.store.findUnique({ where: { id: storeId } });
     if (!store) throw new NotFoundException('Store not found');
     if (store.ownerId !== userId) throw new ForbiddenException('You do not own this store');
 
-    const where: any = { storeId };
-    if (status) where.status = status;
+    const where: Prisma.OrderWhereInput = { storeId };
+    if (status) where.status = status as OrderStatus;
 
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -112,7 +135,7 @@ export class OrdersService {
     return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
-  async findById(id: string): Promise<any> {
+  async findById(id: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
@@ -132,7 +155,7 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(id: string, userId: string, dto: UpdateOrderDto): Promise<any> {
+  async updateStatus(id: string, userId: string, dto: UpdateOrderDto) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: { store: true },
@@ -161,7 +184,7 @@ export class OrdersService {
     });
   }
 
-  async confirmPayment(orderId: string, stripePaymentId: string): Promise<any> {
+  async confirmPayment(orderId: string, stripePaymentId: string) {
     return this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -182,7 +205,7 @@ export class OrdersService {
     supplierOrderId: string,
     trackingNumber: string,
     trackingUrl: string
-  ): Promise<any> {
+  ) {
     return this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -199,7 +222,7 @@ export class OrdersService {
     });
   }
 
-  async getStats(storeId: string, userId: string): Promise<any> {
+  async getStats(storeId: string, userId: string) {
     const store = await this.prisma.store.findUnique({ where: { id: storeId } });
     if (!store) {
       throw new NotFoundException('Store not found');
@@ -229,7 +252,7 @@ export class OrdersService {
     };
   }
 
-  async findByCustomerEmail(email: string): Promise<any[]> {
+  async findByCustomerEmail(email: string) {
     return this.prisma.order.findMany({
       where: { customerEmail: email },
       include: {
@@ -353,7 +376,7 @@ export class OrdersService {
     };
   }
 
-  async createGuestOrder(dto: any): Promise<any> {
+  async createGuestOrder(dto: GuestOrderDto) {
     const store = await this.prisma.store.findUnique({ where: { slug: dto.storeSlug } });
     if (!store) {
       throw new NotFoundException('Store not found');
@@ -387,7 +410,7 @@ export class OrdersService {
           status: isPaid ? OrderStatus.CONFIRMED : OrderStatus.PENDING,
           paymentStatus: isPaid ? PaymentStatus.PAID : PaymentStatus.PENDING,
           items: {
-            create: dto.items.map((item: any) => ({
+            create: dto.items.map((item) => ({
               product: { connect: { id: item.productId } },
               quantity: item.quantity,
               price: new Prisma.Decimal(item.price),
@@ -402,7 +425,7 @@ export class OrdersService {
           currency: dto.currency || 'COP',
           customerEmail: dto.customerEmail,
           customerPhone: dto.customerPhone,
-          shippingAddress: dto.shippingAddress,
+          shippingAddress: (dto.shippingAddress ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
           notes: discountAmount > 0
             ? `Coupon ${dto.couponCode}: -$${discountAmount.toFixed(2)}${dto.notes ? ` | ${dto.notes}` : ''}`
             : (dto.notes ?? null),

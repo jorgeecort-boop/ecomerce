@@ -4,7 +4,7 @@ import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 
 @Injectable()
 export class MercadoPagoService {
-  private readonly client: any;
+  private readonly client: MercadoPagoConfig;
   private readonly logger = new Logger(MercadoPagoService.name);
   private readonly accessToken: string;
   private readonly webhookUrl: string;
@@ -23,11 +23,11 @@ export class MercadoPagoService {
   }
 
   async createPreference(
-    items: any[],
+    items: Array<{ productId: string; title?: string; price: number; quantity: number }>,
     payerEmail: string,
     total: number,
     currency: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ) {
     const preference = new Preference(this.client);
     const storeSlug = metadata?.storeSlug || '';
@@ -36,7 +36,7 @@ export class MercadoPagoService {
     const isProduction = !webUrl.includes('localhost');
 
     const isCOP = currency === 'COP';
-    const body: any = {
+    const body = {
       items: items.map((item) => ({
         id: item.productId,
         title: item.title || 'Producto',
@@ -53,7 +53,7 @@ export class MercadoPagoService {
         pending: `${webUrl}/store/${storeSlug}/checkout/pending`,
       },
       notification_url: this.webhookUrl,
-      external_reference: metadata?.orderNumber || '',
+      external_reference: String(metadata?.orderNumber ?? ''),
       ...(isProduction && { auto_return: 'approved' }),
       metadata: {
         ...metadata,
@@ -93,12 +93,12 @@ export class MercadoPagoService {
       email: string;
       identification: { type: string; number: string };
     };
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     const payment = new Payment(this.client);
     const isCOP = paymentData.transaction_amount > 1000;
 
-    const body: any = {
+    const body = {
       transaction_amount: isCOP
         ? Math.round(paymentData.transaction_amount)
         : paymentData.transaction_amount,
@@ -113,7 +113,7 @@ export class MercadoPagoService {
           number: paymentData.payer.identification.number,
         },
       },
-      ...(paymentData.issuer_id && { issuer_id: paymentData.issuer_id }),
+      ...(paymentData.issuer_id && { issuer_id: Number(paymentData.issuer_id) }),
       metadata: {
         ...paymentData.metadata,
         type: 'ecommerce_order',

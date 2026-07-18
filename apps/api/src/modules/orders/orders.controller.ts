@@ -34,8 +34,8 @@ export class OrdersController {
 
   @Post('guest')
   @ApiOperation({ summary: 'Create order for guest checkout (after Stripe payment)' })
-  async createGuestOrder(@Body() dto: any) {
-    return this.ordersService.createGuestOrder(dto);
+  async createGuestOrder(@Body() dto: Record<string, unknown>) {
+    return this.ordersService.createGuestOrder(dto as any);
   }
 
   @Post('validate-shipping')
@@ -144,8 +144,8 @@ export class OrdersController {
     );
 
     if (order.customerEmail) {
-      const ship = (order.shippingAddress as Record<string, unknown> | null) ?? null;
-      const customerName = ship?.['name'] ? String(ship['name']) : 'Cliente';
+      const ship = order.shippingAddress as Record<string, unknown> | null;
+      const customerName = ship?.name ? String(ship.name) : 'Cliente';
       this.emailService.sendShippingConfirmation({
         to: order.customerEmail,
         customerName,
@@ -167,16 +167,21 @@ export class OrdersController {
   async getTracking(@Param('id') id: string) {
     const order = await this.ordersService.findById(id);
 
-    // Fallback: return order tracking info even if Shippo is not configured
-    const baseInfo = {
+    const baseInfo: {
+      orderId: string;
+      trackingNumber: string | null;
+      trackingUrl: string | null;
+      status: string | null;
+      shippoData: Record<string, unknown> | null;
+    } = {
       orderId: id,
-      trackingNumber: (order as any).trackingNumber ?? null,
-      trackingUrl: (order as any).trackingUrl ?? null,
-      status: (order as any).status ?? null,
-      shippoData: null as any,
+      trackingNumber: order.trackingNumber ?? null,
+      trackingUrl: order.trackingUrl ?? null,
+      status: order.status ?? null,
+      shippoData: null,
     };
 
-    const trackingNumber = (order as any).trackingNumber;
+    const trackingNumber = order.trackingNumber;
     if (!trackingNumber) {
       return { ...baseInfo, message: 'No tracking number assigned to this order yet' };
     }
