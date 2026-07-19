@@ -40,6 +40,9 @@ async function bootstrap() {
   // Raw body for Shopify webhook HMAC verification (must be before global prefix)
   app.use('/api/payments/webhook', require('express').raw({ type: 'application/json' }));
 
+  // Global prefix for all NestJS routes
+  app.setGlobalPrefix('api');
+
   // Global filters and interceptors
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new SuccessInterceptor());
