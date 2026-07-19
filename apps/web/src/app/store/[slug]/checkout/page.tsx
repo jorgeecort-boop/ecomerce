@@ -100,7 +100,11 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
     if (itemsParam) {
       try {
         const parsed = JSON.parse(itemsParam) as CartItem[];
-        setCart(Array.isArray(parsed) ? parsed : []);
+        setCart(
+          Array.isArray(parsed)
+            ? parsed.map((item) => ({ ...item, price: Number(item.price) }))
+            : []
+        );
       } catch (err) {
         console.error('Cart data parse error:', err, 'Items params:', itemsParam);
         setError('Invalid cart data. Please go back to the store.');
@@ -121,7 +125,7 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
   }, [slug]);
 
   useEffect(() => {
-    const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+    const publicKey = (process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '').trim();
     if (publicKey) initMercadoPago(publicKey, { locale: 'es-CO' });
   }, []);
 
