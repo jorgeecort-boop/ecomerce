@@ -189,6 +189,7 @@ export class PaymentsController {
         ...(dto.issuerId && { issuer_id: String(dto.issuerId) }),
         payer: {
           email: dto.formData?.payer?.email || dto.customerEmail,
+          entity_type: 'individual',
           identification: {
             type: dto.formData?.payer?.identification?.type || 'CC',
             number: dto.formData?.payer?.identification?.number || dto.identificationNumber || '0000000000',
