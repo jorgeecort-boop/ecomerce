@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 export default function CheckoutPendingPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const searchParams = useSearchParams();
-  const externalRef = searchParams.get('external_reference');
+  const externalRef = searchParams.get('external_reference') || searchParams.get('orderNumber');
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">

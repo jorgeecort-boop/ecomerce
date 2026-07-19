@@ -9,6 +9,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { ShippoService } from './shippo.service';
@@ -38,6 +39,7 @@ export class OrdersController {
     return this.ordersService.createGuestOrder(dto as any);
   }
 
+  @SkipThrottle()
   @Post('validate-shipping')
   @ApiOperation({ summary: 'Validate guest shipping information before payment step' })
   async validateShipping(

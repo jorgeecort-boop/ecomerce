@@ -254,6 +254,13 @@ export default function CheckoutPage({ params }: { params: { slug: string } }) {
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || 'Error al procesar el pago');
+        setIsSubmitting(false);
+        return;
+      }
+
       const result = data.data || data;
 
       if (result.status === 'approved') {
