@@ -14,21 +14,7 @@ async function bootstrap() {
   // Security headers
   app.use(helmet());
 
-  // Raw Express health check: bypasses all NestJS guards, interceptors and filters
-  // so Render always gets a fast 200 during deploy, regardless of throttling or DB state.
-  const healthResponse = (req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-  };
-  app.use('/api/health', healthResponse);
-  app.use('/api/health/live', healthResponse);
-
-  // Raw body for Shopify webhook HMAC verification (must be before global prefix)
-  app.use('/api/payments/webhook', require('express').raw({ type: 'application/json' }));
-
-  // Global prefix
-  app.setGlobalPrefix('api');
-
-  // CORS
+  // CORS (must be before any route handlers)
   const allowedOrigins = (process.env.WEB_URL || 'http://localhost:3000,http://127.0.0.1:3000')
     .split(',')
     .map((o) => o.trim());
@@ -42,6 +28,17 @@ async function bootstrap() {
     },
     credentials: true,
   });
+
+  // Raw Express health check: bypasses all NestJS guards, interceptors and filters
+  // so Render always gets a fast 200 during deploy, regardless of throttling or DB state.
+  const healthResponse = (req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  };
+  app.use('/api/health', healthResponse);
+  app.use('/api/health/live', healthResponse);
+
+  // Raw body for Shopify webhook HMAC verification (must be before global prefix)
+  app.use('/api/payments/webhook', require('express').raw({ type: 'application/json' }));
 
   // Global filters and interceptors
   app.useGlobalFilters(new HttpExceptionFilter());
