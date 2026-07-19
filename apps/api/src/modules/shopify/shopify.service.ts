@@ -2,6 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
+export interface ShopifyAddress {
+  address1?: string;
+  address2?: string;
+  city?: string;
+  province?: string;
+  zip?: string;
+  country?: string;
+  phone?: string;
+  name?: string;
+  company?: string;
+}
+
+export interface ShopifyCustomer {
+  id: number;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}
+
 export interface ShopifyOrder {
   id: number;
   order_number: number;
@@ -12,8 +32,8 @@ export interface ShopifyOrder {
   fulfillment_status: string | null;
   created_at: string;
   line_items: ShopifyLineItem[];
-  shipping_address?: any;
-  customer?: any;
+  shipping_address?: ShopifyAddress;
+  customer?: ShopifyCustomer;
 }
 
 export interface ShopifyLineItem {
@@ -26,6 +46,24 @@ export interface ShopifyLineItem {
   product_id: number;
 }
 
+export interface ShopifyVariant {
+  id: number;
+  title: string;
+  price: string;
+  sku: string;
+  inventory_item_id: number;
+  inventory_quantity: number;
+  compare_at_price?: string;
+  barcode?: string;
+}
+
+export interface ShopifyImage {
+  id: number;
+  src: string;
+  alt?: string;
+  position?: number;
+}
+
 export interface ShopifyProduct {
   id: number;
   title: string;
@@ -34,8 +72,8 @@ export interface ShopifyProduct {
   product_type: string;
   handle: string;
   status: string;
-  variants: any[];
-  images: any[];
+  variants: ShopifyVariant[];
+  images: ShopifyImage[];
   created_at: string;
   updated_at: string;
 }
@@ -117,7 +155,7 @@ export class ShopifyService {
 
   async getOrders(status: string = 'any', limit: number = 50): Promise<ShopifyOrder[]> {
     try {
-      const data = await this.shopifyFetch<any>(`/orders.json?status=${status}&limit=${limit}`);
+      const data = await this.shopifyFetch<{ orders: ShopifyOrder[] }>(`/orders.json?status=${status}&limit=${limit}`);
       return data.orders || [];
     } catch (error) {
       this.logger.error('Failed to fetch orders', error);
@@ -127,7 +165,7 @@ export class ShopifyService {
 
   async getOrder(orderId: number): Promise<ShopifyOrder | null> {
     try {
-      const data = await this.shopifyFetch<any>(`/orders/${orderId}.json`);
+      const data = await this.shopifyFetch<{ order: ShopifyOrder }>(`/orders/${orderId}.json`);
       return data.order || null;
     } catch (error) {
       this.logger.error(`Failed to fetch order ${orderId}`, error);
@@ -137,7 +175,7 @@ export class ShopifyService {
 
   async getProducts(limit: number = 50): Promise<ShopifyProduct[]> {
     try {
-      const data = await this.shopifyFetch<any>(`/products.json?limit=${limit}`);
+      const data = await this.shopifyFetch<{ products: ShopifyProduct[] }>(`/products.json?limit=${limit}`);
       return data.products || [];
     } catch (error) {
       this.logger.error('Failed to fetch products', error);
@@ -147,7 +185,7 @@ export class ShopifyService {
 
   async getProduct(productId: number): Promise<ShopifyProduct | null> {
     try {
-      const data = await this.shopifyFetch<any>(`/products/${productId}.json`);
+      const data = await this.shopifyFetch<{ product: ShopifyProduct }>(`/products/${productId}.json`);
       return data.product || null;
     } catch (error) {
       this.logger.error(`Failed to fetch product ${productId}`, error);
@@ -160,11 +198,11 @@ export class ShopifyService {
     body_html?: string;
     vendor?: string;
     product_type?: string;
-    variants?: any[];
-    images?: any[];
+    variants?: ShopifyVariant[];
+    images?: ShopifyImage[];
   }): Promise<ShopifyProduct | null> {
     try {
-      const data = await this.shopifyFetch<any>('/products.json', {
+      const data = await this.shopifyFetch<{ product: ShopifyProduct }>('/products.json', {
         method: 'POST',
         body: JSON.stringify({ product }),
       });
@@ -175,9 +213,9 @@ export class ShopifyService {
     }
   }
 
-  async updateProduct(productId: number, product: any): Promise<ShopifyProduct | null> {
+  async updateProduct(productId: number, product: Partial<ShopifyProduct>): Promise<ShopifyProduct | null> {
     try {
-      const data = await this.shopifyFetch<any>(`/products/${productId}.json`, {
+      const data = await this.shopifyFetch<{ product: ShopifyProduct }>(`/products/${productId}.json`, {
         method: 'PUT',
         body: JSON.stringify({ product }),
       });
@@ -202,7 +240,7 @@ export class ShopifyService {
         tracking_numbers: trackingNumbers || [],
       };
 
-      await this.shopifyFetch<any>(`/orders/${orderId}/fulfillments.json`, {
+      await this.shopifyFetch<{ fulfillment: Record<string, unknown> }>(`/orders/${orderId}/fulfillments.json`, {
         method: 'POST',
         body: JSON.stringify({ fulfillment }),
       });
@@ -216,7 +254,7 @@ export class ShopifyService {
 
   async getLocations(): Promise<ShopifyLocation[]> {
     try {
-      const data = await this.shopifyFetch<any>('/locations.json');
+      const data = await this.shopifyFetch<{ locations: ShopifyLocation[] }>('/locations.json');
       return data.locations || [];
     } catch (error) {
       this.logger.error('Failed to fetch locations', error);
@@ -224,12 +262,12 @@ export class ShopifyService {
     }
   }
 
-  async getInventoryLevels(inventoryItemIds: number[]): Promise<any[]> {
+  async getInventoryLevels(inventoryItemIds: number[]): Promise<Record<string, unknown>[]> {
     if (inventoryItemIds.length === 0) return [];
 
     try {
       const ids = inventoryItemIds.join(',');
-      const data = await this.shopifyFetch<any>(`/inventory_levels.json?inventory_item_ids=${ids}`);
+      const data = await this.shopifyFetch<{ inventory_levels: Record<string, unknown>[] }>(`/inventory_levels.json?inventory_item_ids=${ids}`);
       return data.inventory_levels || [];
     } catch (error) {
       this.logger.error('Failed to fetch inventory levels', error);
@@ -243,7 +281,7 @@ export class ShopifyService {
     adjustment: number
   ): Promise<boolean> {
     try {
-      await this.shopifyFetch<any>('/inventory_levels/adjust.json', {
+      await this.shopifyFetch<Record<string, unknown>>('/inventory_levels/adjust.json', {
         method: 'POST',
         body: JSON.stringify({
           inventory_item_id: inventoryItemId,

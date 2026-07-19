@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
-import { ShopifyService } from './shopify.service';
+import { ShopifyService, ShopifyVariant, ShopifyImage } from './shopify.service';
 import { AutoFulfillmentService } from './auto-fulfillment.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SyncProductsDto, CreateShopifyProductDto, FulfillOrderDto } from './dto/shopify.dto';
@@ -62,8 +62,8 @@ export class ShopifyController {
         price: v.price,
         sku: v.sku,
         barcode: v.barcode,
-      })),
-      images: dto.images,
+      })) as ShopifyVariant[],
+      images: dto.images as ShopifyImage[],
     });
   }
 
