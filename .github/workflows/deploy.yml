@@ -1,64 +1,34 @@
-name: Deploy
+name: Deploy to Render
 
 on:
   push:
     branches: [master, main]
-  workflow_dispatch:
-
-concurrency:
-  group: deploy
-  cancel-in-progress: false
 
 jobs:
-  deploy-render:
-    name: Trigger Render Deploy
+  deploy:
+    name: Trigger Render deploy + health check
     runs-on: ubuntu-latest
-    env:
-      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-      API_HEALTH_URL: https://ecomerce-api-zulc.onrender.com/api/health
+    timeout-minutes: 10
+
     steps:
-      - name: Trigger deploy on Render
+      - name: Trigger Render deploy hook
         run: |
-          DEPLOY=$(curl -s -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"clearCache":"do_not_clear"}')
-          echo "Deploy triggered: $(echo $DEPLOY | grep -o '"id":"[^"]*"' | head -1)"
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret not set — skipping deploy trigger"
+            exit 0
+          fi
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
-      - name: Wait and verify health
+      - name: Health check polling
         run: |
-          echo "Waiting 120s for Render deploy startup..."
-          sleep 120
-
-          max_attempts=24
-          delay_seconds=15
-
-          for attempt in $(seq 1 "$max_attempts"); do
-            body_file="$(mktemp)"
-            status=$(curl -sS -o "$body_file" -w "%{http_code}" \
-              --max-time 30 \
-              "$API_HEALTH_URL") || status="000"
-
-            echo "Health check attempt ${attempt}/${max_attempts}: status=${status}"
-
-            if [ "$status" = "200" ]; then
-              echo "API health check passed."
-              cat "$body_file"
-              rm -f "$body_file"
-              echo "Deploy successful!"
+          for i in $(seq 1 24); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://ecomerce-api-zulc.onrender.com/api/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "API healthy after $((i*10))s"
               exit 0
             fi
-
-            echo "API not ready yet. Response body:"
-            cat "$body_file" || true
-            rm -f "$body_file"
-
-            if [ "$attempt" -lt "$max_attempts" ]; then
-              echo "Retrying in ${delay_seconds}s..."
-              sleep "$delay_seconds"
-            fi
+            echo "Attempt $i/24: status $STATUS, waiting 10s..."
+            sleep 10
           done
-
-          echo "Health check failed after $max_attempts attempts."
+          echo "Health check failed after 4 minutes"
           exit 1

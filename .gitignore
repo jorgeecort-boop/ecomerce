@@ -57,6 +57,7 @@ apps/api/cj-mapping-template.csv
 
 # vercel
 .vercel
+.env.vercel
 
 # Supabase local metadata
 supabase/.temp/

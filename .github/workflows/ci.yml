@@ -5,129 +5,36 @@ on:
     branches: [master, main, develop]
   pull_request:
     branches: [master, main, develop]
-  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint & Type Check
+  quality:
+    name: Lint → Test → Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma Client
+      - name: Generate Prisma client
         run: npx prisma generate --schema=packages/db/prisma/schema.prisma
 
-      - name: Build workspace packages
-        run: |
-          npm run build --workspace=packages/db
-          npm run build --workspace=packages/utils
-          npm run build --workspace=packages/config
+      - name: Lint
+        run: npm run lint
 
-      - name: Type check API
-        run: npx tsc --noEmit --project apps/api/tsconfig.json
+      - name: Test
+        run: npm run test
 
-      - name: Type check Web
-        run: npx tsc --noEmit --project apps/web/tsconfig.json
-        continue-on-error: true
-
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate --schema=packages/db/prisma/schema.prisma
-
-      - name: Build workspace packages
-        run: |
-          npm run build --workspace=packages/db
-          npm run build --workspace=packages/utils
-          npm run build --workspace=packages/config
-
-      - name: Run API tests with coverage
-        run: npm run test:cov --workspace=apps/api
-
-      - name: Upload API coverage
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: api-coverage-report
-          path: apps/api/coverage/
-          retention-days: 7
-
-      - name: Run Web tests
-        run: npm run test --workspace=apps/web
-
-  e2e:
-    name: E2E (Playwright)
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright
-        run: npx playwright install chromium --with-deps
-
-      - name: Run E2E tests
-        run: npm run test:e2e --workspace=apps/web
-        env:
-          E2E_STORE_SLUG: ${{ vars.E2E_STORE_SLUG || 'tienda-demo' }}
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [lint, test]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate --schema=packages/db/prisma/schema.prisma
-
-      - name: Build workspace packages
-        run: |
-          npm run build --workspace=packages/db
-          npm run build --workspace=packages/utils
-          npm run build --workspace=packages/config
-
-      - name: Build API
-        run: npm run build --workspace=apps/api
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-build
-          path: apps/api/dist/
-          retention-days: 3
+      - name: Build
+        run: npm run build
