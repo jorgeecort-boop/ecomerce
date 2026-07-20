@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
+import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { StoresModule } from './modules/stores/stores.module';
@@ -27,6 +28,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { CurrencyModule } from './modules/currency/currency.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { QueueModule } from './common/queue/queue.module';
 
 @Module({
   imports: [
@@ -52,6 +54,27 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
       max: 100,       // max 100 items in memory
     }),
     ScheduleModule.forRoot(),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV === 'production'
+            ? undefined
+            : {
+                target: 'pino-pretty',
+                options: { colorize: true, singleLine: true },
+              },
+        autoLogging: false,
+        serializers: {
+          req: (req) => ({
+            method: req.method,
+            url: req.url,
+          }),
+          res: (res) => ({
+            statusCode: res.statusCode,
+          }),
+        },
+      },
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -73,6 +96,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     CurrencyModule,
     WishlistModule,
     WebhooksModule,
+    QueueModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
@@ -11,14 +12,16 @@ import { TelegramService } from './common/telegram.service';
 import { validateEnv } from '@ecomerce/config';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-
-  const envVars = validateEnv(logger);
+  const envVars = validateEnv();
   const environment = process.env.NODE_ENV || 'development';
 
   initSentry(process.env.SENTRY_DSN, environment);
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
+  const port = process.env.PORT || 3001;
 
   // Security headers
   app.use(helmet({
@@ -101,9 +104,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  logger.log(`Application is running on: http://0.0.0.0:${port}`);
+  logger.log(`Application running on http://0.0.0.0:${port} [${environment}]`);
 }
 
 process.on('unhandledRejection', (reason: unknown) => {
