@@ -22,22 +22,24 @@ export function CartDrawer({ isOpen, onClose, storeSlug }: CartDrawerProps) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const storageKey = `cart_${storeSlug}`;
 
-  const loadCart = () => {
-    const stored = sessionStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setCart(JSON.parse(stored));
-      } catch {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadCart = () => {
+      const stored = sessionStorage.getItem(storageKey);
+      if (stored) {
+        try {
+          setCart(JSON.parse(stored));
+        } catch {
+          setCart([]);
+        }
+      } else {
         setCart([]);
       }
-    } else {
-      setCart([]);
-    }
-  };
+    };
 
-  useEffect(() => {
-    if (isOpen) loadCart();
-  }, [isOpen]);
+    loadCart();
+  }, [isOpen, storageKey]);
 
   const updateQuantity = (itemId: string, quantity: number) => {
     const newCart = cart

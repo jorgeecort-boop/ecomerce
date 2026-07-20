@@ -33,19 +33,20 @@ export default function MyOrdersPage() {
 
   useEffect(() => {
     if (!token) return;
+
+    const fetchOrders = async () => {
+      try {
+        const data = await api.orders.myOrders(token!);
+        setOrders(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchOrders();
   }, [token]);
-
-  const fetchOrders = async () => {
-    try {
-      const data = await api.orders.myOrders(token!);
-      setOrders(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (

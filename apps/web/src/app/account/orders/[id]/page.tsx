@@ -28,19 +28,20 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!token || !params.id) return;
-    fetchOrder();
-  }, [token, params.id]);
 
-  const fetchOrder = async () => {
-    try {
-      const data = await api.orders.getById(token!, params.id as string);
-      setOrder(data);
-    } catch {
-      router.push('/account/orders');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchOrder = async () => {
+      try {
+        const data = await api.orders.getById(token!, params.id as string);
+        setOrder(data);
+      } catch {
+        router.push('/account/orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [token, params.id, router]);
 
   if (loading) {
     return (

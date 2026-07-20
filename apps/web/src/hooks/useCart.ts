@@ -26,7 +26,7 @@ export function useCart(slug: string) {
       }
     }
     setIsLoading(false);
-  }, [slug]);
+  }, [slug, storageKey]);
 
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart);

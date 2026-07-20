@@ -28,6 +28,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ── Safe localStorage wrapper ──────────────────────────────────────────
+const safeLocalStorage = {
+  getItem: (key: string) => {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  setItem: (key: string, value: string) => {
+    try { localStorage.setItem(key, value); } catch { /* ignore */ }
+  },
+  removeItem: (key: string) => {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+  },
+};
+
 // ── Cookie helpers ──────────────────────────────────────────────────────────
 function setTokenCookie(token: string) {
   try { document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`; } catch { /* ignore */ }
@@ -42,33 +55,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Safe localStorage wrapper ──────────────────────────────────────────
-  const safeLocalStorage = {
-    getItem: (key: string) => {
-      try { return localStorage.getItem(key); } catch { return null; }
-    },
-    setItem: (key: string, value: string) => {
-      try { localStorage.setItem(key, value); } catch { /* ignore */ }
-    },
-    removeItem: (key: string) => {
-      try { localStorage.removeItem(key); } catch { /* ignore */ }
-    },
-  };
-
-  // ── Save tokens helper ──────────────────────────────────────────────────
-  const saveAuth = useCallback(
-    (data: { accessToken: string; refreshToken: string; user: { id: string; email: string } }) => {
-      setToken(data.accessToken);
-      setUser(data.user);
-      safeLocalStorage.setItem('token', data.accessToken);
-      safeLocalStorage.setItem('refreshToken', data.refreshToken);
-      safeLocalStorage.setItem('user', JSON.stringify(data.user));
-      setTokenCookie(data.accessToken);
-      scheduleRefresh();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  // ── Logout ────────────────────────────────────────────────────────────────
+  const doLogout = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    setUser(null);
+    setToken(null);
+    safeLocalStorage.removeItem('token');
+    safeLocalStorage.removeItem('refreshToken');
+    safeLocalStorage.removeItem('user');
+    clearTokenCookie();
+  }, []);
 
   // ── Auto-refresh: schedule a refresh 1 minute before token expiry ───────
   const scheduleRefresh = useCallback(() => {
@@ -104,17 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       13 * 60 * 1000
     );
-  }, []);
+  }, [doLogout]);
 
-  const doLogout = useCallback(() => {
-    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-    setUser(null);
-    setToken(null);
-    safeLocalStorage.removeItem('token');
-    safeLocalStorage.removeItem('refreshToken');
-    safeLocalStorage.removeItem('user');
-    clearTokenCookie();
-  }, []);
+  // ── Save tokens helper ──────────────────────────────────────────────────
+  const saveAuth = useCallback(
+    (data: { accessToken: string; refreshToken: string; user: { id: string; email: string } }) => {
+      setToken(data.accessToken);
+      setUser(data.user);
+      safeLocalStorage.setItem('token', data.accessToken);
+      safeLocalStorage.setItem('refreshToken', data.refreshToken);
+      safeLocalStorage.setItem('user', JSON.stringify(data.user));
+      setTokenCookie(data.accessToken);
+      scheduleRefresh();
+    },
+    [scheduleRefresh]
+  );
 
   // ── Init: restore session on mount ──────────────────────────────────────
   useEffect(() => {
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [scheduleRefresh]);
+  }, [scheduleRefresh, doLogout]);
 
   // ── Login (with retry for Render cold starts) ──────────────────────────
   const login = async (email: string, password: string) => {

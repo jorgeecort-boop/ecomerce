@@ -20,22 +20,26 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchReviews = async () => {
-    try {
-      const res = await fetch(`${API_URL}/reviews/product/${productId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data);
-      }
-    } catch (e) {
-      console.error('Error fetching reviews:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let cancelled = false;
+
+    const fetchReviews = async () => {
+      try {
+        const res = await fetch(`${API_URL}/reviews/product/${productId}`);
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          setReviews(data);
+        }
+      } catch (e) {
+        if (!cancelled) console.error('Error fetching reviews:', e);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
     fetchReviews();
+
+    return () => { cancelled = true; };
   }, [productId]);
 
   const handleReviewSubmitted = (newReview: Review) => {

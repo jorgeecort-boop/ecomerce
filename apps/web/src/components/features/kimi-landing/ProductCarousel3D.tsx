@@ -244,7 +244,6 @@ export default function ProductCarousel3D() {
 
     return () => {
       observer.disconnect();
-      const container = canvasContainerRef.current;
       if (container && (container as any).__cleanup) {
         (container as any).__cleanup();
       }
