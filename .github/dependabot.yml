@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'America/Bogota'
+    open-pull-requests-limit: 10
+    versioning-strategy: 'auto'
+    labels:
+      - 'dependencies'
+    ignore:
+      - dependency-name: 'zod'
+        update-types: ['version-update:semver-major']
+    groups:
+      nestjs:
+        patterns:
+          - '@nestjs/*'
+      nextjs:
+        patterns:
+          - 'next'
+          - '@next/*'
+          - 'eslint-config-next'
+      prisma:
+        patterns:
+          - 'prisma'
+          - '@prisma/client'
+      sentry:
+        patterns:
+          - '@sentry/*'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+    labels:
+      - 'dependencies'
+      - 'ci'

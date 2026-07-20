@@ -47,6 +47,37 @@ const nextConfig = {
   },
   async headers() {
     return [
+      // Cache static assets (immutable hashed filenames)
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Cache public pages with CDN stale-while-revalidate
+      {
+        source: '/store/:slug*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        ],
+      },
+      // Cache sitemap and robots
+      {
+        source: '/(sitemap.xml|robots.txt)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=600',
+          },
+        ],
+      },
+      // Security headers (all routes)
       {
         source: '/:path*',
         headers: [

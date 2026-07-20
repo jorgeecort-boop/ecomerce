@@ -148,6 +148,7 @@ model Order {
   @@index([status])
   @@index([stripePaymentId])
   @@index([customerEmail])
+  @@index([paymentStatus, createdAt])
   @@map("orders")
 }
 
@@ -308,6 +309,7 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
+  @@index([userId, isRead])
   @@map("notifications")
 }
 
@@ -343,6 +345,7 @@ model AuditLog {
   @@index([userId])
   @@index([storeId])
   @@index([entity, entityId])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -519,5 +522,6 @@ model Review {
   updatedAt DateTime @updatedAt
 
   @@index([productId])
+  @@index([rating])
   @@map("reviews")
 }
