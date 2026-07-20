@@ -1,10 +1,11 @@
-import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Logger, BadRequestException, Req, Headers, UnauthorizedException, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../../config/prisma.service';
 import { MercadoPagoService } from './mercado-pago.service';
 import { PaymentsService } from './payments.service';
 import { OrdersService } from '../orders/orders.service';
+import { CsrfGuard } from '../../common/guards/csrf.guard';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 @ApiTags('payments')
@@ -20,6 +21,7 @@ export class PaymentsController {
   ) {}
 
   @Post('create-preference')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Create a MercadoPago payment preference and pending order' })
   async createPreference(@Req() req: any) {
     const dto = req.body;
@@ -120,10 +122,59 @@ export class PaymentsController {
   }
 
   @Post('process-payment')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Process a card payment via Checkout API (Payment Brick)' })
   async processPayment(@Req() req: any) {
     const dto = req.body;
     try {
+      if (dto.idempotencyKey) {
+        const existing = await this.prisma.order.findUnique({
+          where: { idempotencyKey: dto.idempotencyKey },
+          select: {
+            id: true,
+            orderNumber: true,
+            paymentStatus: true,
+            stripePaymentId: true,
+          },
+        });
+
+        if (existing) {
+          this.logger.log(
+            `Idempotency hit for key ${dto.idempotencyKey}: order ${existing.orderNumber} (${existing.paymentStatus})`,
+          );
+
+          if (existing.paymentStatus === 'PAID') {
+            return {
+              status: 'approved',
+              statusDetail: 'idempotency_replay_paid',
+              paymentId: existing.stripePaymentId,
+              orderId: existing.id,
+              orderNumber: existing.orderNumber,
+            };
+          }
+
+          let mpStatus = 'pending';
+          let mpDetail = 'idempotency_replay_pending';
+          if (existing.stripePaymentId) {
+            try {
+              const mpInfo = await this.mercadoPagoService.getPayment(existing.stripePaymentId);
+              mpStatus = mpInfo.status || 'pending';
+              mpDetail = mpInfo.status_detail || 'idempotency_replay';
+            } catch {
+              // MP lookup failed, return pending status
+            }
+          }
+
+          return {
+            status: mpStatus,
+            statusDetail: mpDetail,
+            paymentId: existing.stripePaymentId,
+            orderId: existing.id,
+            orderNumber: existing.orderNumber,
+          };
+        }
+      }
+
       const dbProducts = await this.prisma.product.findMany({
         where: { id: { in: dto.items.map((i: any) => i.productId) } },
         select: { id: true, price: true, title: true, inventory: true },
@@ -173,6 +224,7 @@ export class PaymentsController {
         paymentStatus: 'PENDING',
         notes: dto.notes,
         couponCode: dto.couponCode,
+        idempotencyKey: dto.idempotencyKey || undefined,
       });
 
       const description = dto.items

@@ -15,6 +15,7 @@ import { OrdersService } from './orders.service';
 import { ShippoService } from './shippo.service';
 import { EmailService } from '../../common/email.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CsrfGuard } from '../../common/guards/csrf.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
@@ -28,12 +29,14 @@ export class OrdersController {
   ) {}
 
   @Post()
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Create a new order (public checkout)' })
   async create(@Body() dto: CreateOrderDto) {
     return this.ordersService.create(dto);
   }
 
   @Post('guest')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Create order for guest checkout (after Stripe payment)' })
   async createGuestOrder(@Body() dto: Record<string, unknown>) {
     return this.ordersService.createGuestOrder(dto as any);
@@ -41,6 +44,7 @@ export class OrdersController {
 
   @SkipThrottle()
   @Post('validate-shipping')
+  @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Validate guest shipping information before payment step' })
   async validateShipping(
     @Body()

@@ -3,32 +3,54 @@ name: Deploy to Render
 on:
   push:
     branches: [master, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Trigger Render deploy + health check
+    name: Trigger Render Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    env:
+      API_HEALTH_URL: https://ecomerce-api-zulc.onrender.com/api/health
+
     steps:
-      - name: Trigger Render deploy hook
+      - name: Trigger deploy on Render
         run: |
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            echo "RENDER_DEPLOY_HOOK_URL secret not set — skipping deploy trigger"
+          if [ -z "${{ secrets.RENDER_API_KEY }}" ] || [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
+            echo "RENDER_API_KEY or RENDER_SERVICE_ID secret not set — skipping deploy trigger"
             exit 0
           fi
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+          DEPLOY=$(curl -s -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":"do_not_clear"}')
+          echo "Deploy triggered: $(echo "$DEPLOY" | grep -o '"id":"[^"]*"' | head -1)"
 
       - name: Health check polling
         run: |
+          echo "Waiting 120s for Render deploy startup..."
+          sleep 120
+
           for i in $(seq 1 24); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://ecomerce-api-zulc.onrender.com/api/health)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 30 \
+              "$API_HEALTH_URL") || STATUS="000"
+
+            echo "Health check $i/24: status=$STATUS"
+
             if [ "$STATUS" = "200" ]; then
-              echo "API healthy after $((i*10))s"
+              echo "API healthy after $((120 + i*15))s"
               exit 0
             fi
-            echo "Attempt $i/24: status $STATUS, waiting 10s..."
-            sleep 10
+
+            sleep 15
           done
-          echo "Health check failed after 4 minutes"
+
+          echo "Health check failed after 8 minutes"
           exit 1

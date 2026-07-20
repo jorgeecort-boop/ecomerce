@@ -129,6 +129,7 @@ model Order {
   billingAddress  Json?
   stripePaymentId String?     @unique
   paymentStatus   PaymentStatus @default(PENDING)
+  idempotencyKey  String?     @unique
   paidAt          DateTime?
   payments        Payment[]
   trackingNumber  String?

@@ -27,6 +27,7 @@ interface GuestOrderDto {
   couponCode?: string;
   paymentStatus?: string;
   paymentIntentId?: string;
+  idempotencyKey?: string;
 }
 
 @Injectable()
@@ -432,6 +433,9 @@ export class OrdersService {
           ...(isPaid && {
             stripePaymentId: dto.paymentIntentId,
             paidAt: new Date(),
+          }),
+          ...(dto.idempotencyKey && {
+            idempotencyKey: dto.idempotencyKey,
           }),
         },
         include: {
