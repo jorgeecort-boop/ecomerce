@@ -6,6 +6,17 @@ import { ShopifyWebhookGuard } from '../../common/guards/shopify-webhook.guard';
 import { PrismaService } from '../../config/prisma.service';
 import { TelegramService } from '../../common/telegram.service';
 
+const processedWebhookIds = new Set<string>();
+const WEBHOOK_ID_TTL = 72 * 60 * 60 * 1000; // 72 hours
+
+function isDuplicate(webhookId: string): boolean {
+  if (!webhookId) return false;
+  if (processedWebhookIds.has(webhookId)) return true;
+  processedWebhookIds.add(webhookId);
+  setTimeout(() => processedWebhookIds.delete(webhookId), WEBHOOK_ID_TTL);
+  return false;
+}
+
 @ApiTags('shopify-webhooks')
 @Controller('shopify/webhooks')
 @UseGuards(ShopifyWebhookGuard)
@@ -26,7 +37,12 @@ export class ShopifyWebhookController {
     @Headers('x-shopify-hmac-sha256') hmac: string,
     @Headers('x-shopify-topic') topic: string,
     @Headers('x-shopify-shop-domain') shopDomain: string,
+    @Headers('x-shopify-webhook-id') webhookId: string,
   ) {
+    if (isDuplicate(webhookId)) {
+      return { success: true, skipped: true, reason: 'duplicate' };
+    }
+
     this.logger.log(
       `Order webhook topic=${topic} shop=${shopDomain} order=#${body.order_number}`,
     );
@@ -46,7 +62,11 @@ export class ShopifyWebhookController {
     @Body() body: any,
     @Headers('x-shopify-topic') topic: string,
     @Headers('x-shopify-shop-domain') shopDomain: string,
+    @Headers('x-shopify-webhook-id') webhookId: string,
   ) {
+    if (isDuplicate(webhookId)) {
+      return { success: true, skipped: true, reason: 'duplicate' };
+    }
     this.logger.log(
       `Fulfillment webhook ✓ topic=${topic} shop=${shopDomain} order=#${body.order_number}`,
     );
@@ -62,7 +82,11 @@ export class ShopifyWebhookController {
     @Body() body: any,
     @Headers('x-shopify-topic') topic: string,
     @Headers('x-shopify-shop-domain') shopDomain: string,
+    @Headers('x-shopify-webhook-id') webhookId: string,
   ) {
+    if (isDuplicate(webhookId)) {
+      return { success: true, synced: false, skipped: true, reason: 'duplicate' };
+    }
     this.logger.log(
       `Product webhook ✓ topic=${topic} shop=${shopDomain} product=${body.id} title="${body.title}"`,
     );

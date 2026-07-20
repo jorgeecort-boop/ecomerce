@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
+import { retry } from '@ecomerce/utils';
 
 @Injectable()
 export class MercadoPagoService {
@@ -61,7 +62,15 @@ export class MercadoPagoService {
       },
     };
 
-    const result = await preference.create({ body });
+    const result = await retry(
+      () => preference.create({ body }),
+      {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        onRetry: (attempt, err) =>
+          this.logger.warn(`Preference.create retry ${attempt}/3: ${(err as Error).message}`),
+      },
+    );
 
     this.logger.log(`Preference created: ${result.id} - Total: ${total} ${currency}`);
 
@@ -120,7 +129,15 @@ export class MercadoPagoService {
       },
     };
 
-    const result = await payment.create({ body });
+    const result = await retry(
+      () => payment.create({ body }),
+      {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        onRetry: (attempt, err) =>
+          this.logger.warn(`Payment.create retry ${attempt}/3: ${(err as Error).message}`),
+      },
+    );
 
     this.logger.log(
       `Payment ${result.id}: ${result.status} (${result.status_detail})`,

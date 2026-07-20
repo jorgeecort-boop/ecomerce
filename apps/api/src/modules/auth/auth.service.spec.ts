@@ -45,7 +45,7 @@ describe('AuthService', () => {
     };
 
     const emailService = {
-      sendEmail: jest.fn().mockResolvedValue({ id: 'email-1' }),
+      send: jest.fn().mockResolvedValue({ id: 'email-1' }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -41,6 +41,21 @@ export class AuthService {
       password: hashedPassword,
     });
 
+    this.emailService.send({
+      to: user.email,
+      subject: 'Bienvenido a Ecomerce',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+          <h2 style="color:#03045E;">¡Bienvenido a Ecomerce!</h2>
+          <p style="color:#333;">Gracias por registrarte. Tu cuenta ha sido creada exitosamente.</p>
+          <p style="color:#333;">Explora nuestra tienda y encuentra los mejores productos.</p>
+          <a href="${this.configService.get('WEB_URL') || 'http://localhost:3000'}" style="display:inline-block;padding:12px 24px;background:#00B4D8;color:white;text-decoration:none;border-radius:8px;font-weight:bold;">
+            Ir a la tienda
+          </a>
+        </div>
+      `,
+    }).catch(() => {});
+
     return this.generateTokens(user.id, user.email);
   }
 

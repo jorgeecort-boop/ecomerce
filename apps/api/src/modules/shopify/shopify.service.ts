@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import { retry } from '@ecomerce/utils';
 
 export interface ShopifyAddress {
   address1?: string;
@@ -108,27 +109,41 @@ export class ShopifyService {
       return this.accessToken;
     }
 
-    const response = await fetch(`https://${this.storeUrl}/admin/oauth/access_token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-      }),
-    });
+    const result = await retry(
+      async () => {
+        const response = await fetch(`https://${this.storeUrl}/admin/oauth/access_token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'client_credentials',
+            client_id: this.clientId,
+            client_secret: this.clientSecret,
+          }),
+        });
 
-    if (!response.ok) {
-      const text = await response.text();
-      this.logger.error(`Shopify OAuth token request failed: ${response.status} - ${text}`);
-      throw new Error(`Shopify OAuth token request failed: ${response.status}`);
-    }
+        if (!response.ok) {
+          throw new Error(`Shopify OAuth token request failed: ${response.status}`);
+        }
 
-    const { access_token, expires_in } = await response.json();
-    this.accessToken = access_token;
-    this.tokenExpiresAt = Date.now() + (expires_in || 86400) * 1000;
+        const data = await response.json();
+        const token = (data.access_token as string) || '';
+        if (!token) {
+          throw new Error('Shopify OAuth returned empty access token');
+        }
+        this.accessToken = token;
+        this.tokenExpiresAt = Date.now() + ((data.expires_in as number) || 86400) * 1000;
+        return token;
+      },
+      {
+        maxAttempts: 3,
+        baseDelayMs: 2000,
+        onRetry: (attempt, err) =>
+          this.logger.warn(`Shopify OAuth retry ${attempt}/3: ${(err as Error).message}`),
+      },
+    );
+
     this.logger.log('Shopify OAuth token refreshed');
-    return access_token;
+    return result;
   }
 
   private async shopifyFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

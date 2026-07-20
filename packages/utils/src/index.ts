@@ -26,5 +26,27 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+export async function retry<T>(
+  fn: () => Promise<T>,
+  options?: { maxAttempts?: number; baseDelayMs?: number; onRetry?: (attempt: number, error: unknown) => void },
+): Promise<T> {
+  const max = options?.maxAttempts ?? 3;
+  const baseDelay = options?.baseDelayMs ?? 1000;
+
+  for (let attempt = 1; attempt <= max; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === max) throw err;
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      if (options?.onRetry) {
+        options.onRetry(attempt, err);
+      }
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error('retry: unreachable');
+}
+
 export * from './api';
 export { api } from './api';

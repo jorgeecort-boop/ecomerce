@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
 import { initSentry, captureException } from './common/sentry';
+import { TelegramService } from './common/telegram.service';
 import { validateEnv } from '@ecomerce/config';
 
 async function bootstrap() {
@@ -28,7 +29,7 @@ async function bootstrap() {
     .map((o) => o.trim());
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((o) => origin.startsWith(o))) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));
@@ -53,7 +54,16 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Global filters and interceptors
-  app.useGlobalFilters(new HttpExceptionFilter());
+  const exceptionFilter = new HttpExceptionFilter();
+  try {
+    const telegramService = app.get(TelegramService);
+    exceptionFilter.setSystemErrorNotifier((msg: string) => {
+      telegramService.notifySystemError(msg).catch(() => {});
+    });
+  } catch {
+    // TelegramService may not be available in test environment
+  }
+  app.useGlobalFilters(exceptionFilter);
   app.useGlobalInterceptors(new SuccessInterceptor());
 
   // Global validation pipe

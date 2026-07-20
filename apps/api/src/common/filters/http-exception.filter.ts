@@ -5,6 +5,12 @@ import { captureException } from '../sentry';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private onSystemError?: (message: string) => void;
+
+  setSystemErrorNotifier(notifier: (message: string) => void) {
+    this.onSystemError = notifier;
+  }
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -63,6 +69,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
           status,
           path: request.url,
         });
+        if (this.onSystemError) {
+          this.onSystemError(`HTTP ${status}: ${message} (${request.method} ${request.url})`);
+        }
       }
 
       response.status(status).json({
@@ -75,11 +84,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    // Unknown errors — always send to Sentry
-    captureException(exception instanceof Error ? exception : new Error(String(exception)), {
+    // Unknown errors — always send to Sentry + Telegram
+    const err = exception instanceof Error ? exception : new Error(String(exception));
+    captureException(err, {
       context: 'UnknownError',
       path: request.url,
     });
+    if (this.onSystemError) {
+      this.onSystemError(`Unknown: ${err.message} (${request.method} ${request.url})`);
+    }
 
     const status = HttpStatus.INTERNAL_SERVER_ERROR;
     response.status(status).json({

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../config/prisma.service';
 import { SupplierApiService } from './supplier-api.service';
+import { TelegramService } from '../../common/telegram.service';
 
 @Injectable()
 export class InventorySyncService {
@@ -10,6 +11,7 @@ export class InventorySyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly supplierApi: SupplierApiService,
+    private readonly telegram: TelegramService,
   ) {}
 
   /**
@@ -94,6 +96,9 @@ export class InventorySyncService {
       this.logger.warn(
         `Low stock alert: ${lowStockProducts.length} products below ${LOW_STOCK_THRESHOLD} units`,
       );
+      for (const product of lowStockProducts.slice(0, 5)) {
+        this.telegram.notifyLowStock(product.title, product.inventory).catch(() => {});
+      }
     }
   }
 }

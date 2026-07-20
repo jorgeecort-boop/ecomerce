@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { API_URL } from '@ecomerce/utils';
 
+declare global {
+  interface Window {
+    plausible?: (event: string, options?: { props?: Record<string, string>; revenue?: { currency: string; amount: number } }) => void;
+  }
+}
+
 export default function CheckoutSuccessPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const searchParams = useSearchParams();
@@ -16,6 +22,14 @@ export default function CheckoutSuccessPage({ params }: { params: { slug: string
     if (!externalRef) return;
 
     setOrderNumber(externalRef);
+
+    // Track conversion
+    if (typeof window !== 'undefined' && window.plausible) {
+      window.plausible('purchase', {
+        props: { orderNumber: externalRef, store: slug },
+        revenue: { currency: 'COP', amount: 0 },
+      });
+    }
 
     let attempts = 0;
     const maxAttempts = 12;
