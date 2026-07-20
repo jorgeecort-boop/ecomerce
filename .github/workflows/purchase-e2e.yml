@@ -21,7 +21,7 @@ jobs:
       E2E_PRODUCT_ID: cmogce3ds000jeqaeyvvnzapz
       E2E_PRODUCT_NAME: Kit Ring Light 26cm con Tripode 2m para Streaming
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
