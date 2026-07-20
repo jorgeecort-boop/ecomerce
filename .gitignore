@@ -44,6 +44,8 @@ QUICK_START_CJ.md
 
 # dev-only scripts (utilities, not production code)
 /scripts/
+!scripts/backup-db.sh
+!scripts/backup-db.ps1
 apps/api/scripts/*
 !apps/api/scripts/map-cj-variants.cjs
 !apps/api/scripts/export-cj-mapping-template.cjs
