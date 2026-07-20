@@ -6,16 +6,24 @@ import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
+import { initSentry, captureException } from './common/sentry';
+import { validateEnv } from '@ecomerce/config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  const envVars = validateEnv(logger);
+  const environment = process.env.NODE_ENV || 'development';
+
+  initSentry(process.env.SENTRY_DSN, environment);
+
   const app = await NestFactory.create(AppModule);
 
   // Security headers
   app.use(helmet());
 
   // CORS (must be before any route handlers)
-  const allowedOrigins = (process.env.WEB_URL || 'http://localhost:3000,http://127.0.0.1:3000')
+  const allowedOrigins = (envVars.WEB_URL || 'http://localhost:3000,http://127.0.0.1:3000')
     .split(',')
     .map((o) => o.trim());
   app.enableCors({
@@ -37,8 +45,9 @@ async function bootstrap() {
   app.use('/api/health', healthResponse);
   app.use('/api/health/live', healthResponse);
 
-  // Raw body for Shopify webhook HMAC verification (must be before global prefix)
+  // Raw body for webhook HMAC verification (must be before global prefix)
   app.use('/api/payments/webhook', require('express').raw({ type: 'application/json' }));
+  app.use('/api/shopify/webhooks', require('express').raw({ type: 'application/json' }));
 
   // Global prefix for all NestJS routes
   app.setGlobalPrefix('api');
@@ -76,15 +85,18 @@ async function bootstrap() {
 
 process.on('unhandledRejection', (reason: unknown) => {
   console.error('[UnhandledRejection]', reason);
+  captureException(reason instanceof Error ? reason : new Error(String(reason)), {
+    type: 'unhandledRejection',
+  });
 });
 
 process.on('uncaughtException', (err: Error) => {
-  // Defensive: keep the process alive so Render does not kill the deploy
-  // before we can read the log. We still log the full stack for diagnosis.
   console.error('[UncaughtException]', err.message, err.stack);
+  captureException(err, { type: 'uncaughtException' });
 });
 
 bootstrap().catch((err) => {
   console.error('[FatalStartupError]', err);
+  captureException(err, { type: 'fatalStartup' });
   process.exit(1);
 });

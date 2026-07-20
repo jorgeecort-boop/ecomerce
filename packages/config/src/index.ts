@@ -1,3 +1,6 @@
+export { validateEnv } from './env.schema';
+export type { ValidatedEnv } from './env.schema';
+
 export const config = {
   apiUrl: process.env.API_URL || 'http://localhost:3001',
   webUrl: process.env.WEB_URL || 'http://localhost:3000',

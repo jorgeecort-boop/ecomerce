@@ -1,6 +1,7 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
+import { captureException } from '../sentry';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -15,6 +16,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       const status = exception.code === 'P2025' ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
       const message = exception.code === 'P2025' ? 'Record not found' : 'Database error';
+
+      captureException(exception, {
+        context: 'PrismaClientKnownRequestError',
+        code: exception.code,
+        path: request.url,
+      });
+
       response.status(status).json({
         statusCode: status,
         timestamp,
@@ -26,6 +34,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof Prisma.PrismaClientValidationError) {
+      captureException(exception, {
+        context: 'PrismaClientValidationError',
+        path: request.url,
+      });
+
       response.status(HttpStatus.BAD_REQUEST).json({
         statusCode: HttpStatus.BAD_REQUEST,
         timestamp,
@@ -44,6 +57,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? errorResponse 
         : (errorResponse as any).message || 'An error occurred';
 
+      if (status >= 500) {
+        captureException(exception, {
+          context: 'HttpException',
+          status,
+          path: request.url,
+        });
+      }
+
       response.status(status).json({
         statusCode: status,
         timestamp,
@@ -54,7 +75,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    // Unknown errors
+    // Unknown errors — always send to Sentry
+    captureException(exception instanceof Error ? exception : new Error(String(exception)), {
+      context: 'UnknownError',
+      path: request.url,
+    });
+
     const status = HttpStatus.INTERNAL_SERVER_ERROR;
     response.status(status).json({
       statusCode: status,
