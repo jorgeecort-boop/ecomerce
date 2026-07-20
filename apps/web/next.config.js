@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@ecomerce/ui', '@ecomerce/config', '@ecomerce/utils'],
@@ -40,6 +42,19 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    instrumentationHook: true,
+  },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  org: 'sarahtech',
+  project: 'javascript-nextjs',
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  reactComponentAnnotation: { enabled: true },
+  tunnelRoute: '/monitoring',
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+});
